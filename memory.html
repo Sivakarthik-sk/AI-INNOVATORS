@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Test</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background: #f4f4f4;
+            color: #333;
+        }
+
+        .header {
+            background: #004080;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .main-content {
+            display: flex;
+            min-height: calc(100vh - 60px);
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #e0e0e0;
+            padding: 1rem;
+            border-right: 1px solid #ccc;
+        }
+
+        .sidebar h2 {
+            color: #004080;
+            margin-top: 0;
+        }
+
+        .level-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .level-item {
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .level-item.unlocked { background: #ffffff; color: #333; }
+        .level-item.locked { background: #ffcccc; color: #666; cursor: not-allowed; }
+        .level-item.completed { background: #d4edda; color: #155724; }
+        .level-item:hover:not(.locked) { background: #f0f0f0; }
+
+        .unlock-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 0.3rem 0.6rem;
+            margin-left: 0.5rem;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .unlock-button:hover { background: #218838; }
+
+        .content {
+            flex: 1;
+            padding: 2rem;
+        }
+
+        .memory-container {
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 2rem;
+            border-radius: 5px;
+            text-align: center;
+            display: none;
+        }
+
+        .memory-grid {
+            display: grid;
+            gap: 0.5rem;
+            max-width: 400px;
+            margin: 2rem auto;
+        }
+
+        .memory-card {
+            background: #e0e0e0;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            transition: all 0.3s ease;
+        }
+
+        .memory-card:hover { background: #d0d0d0; }
+        .memory-card.active { background: #d4edda; }
+        .memory-grid.error { border: 2px solid red; }
+
+        .cards-section {
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-top: 2rem;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .card {
+            background: #e0e0e0;
+            padding: 1rem;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .back-button {
+            background: #004080;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0.5rem;
+        }
+
+        .back-button:hover { background: #0056b3; }
+
+        .instructions {
+            font-size: 0.9rem;
+            color: #555;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 768px) {
+            .main-content { flex-direction: column; }
+            .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #ccc; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Memory Test - Brain Boosters</h1>
+    </div>
+    <div class="main-content">
+        <div class="sidebar">
+            <h2>Memory Levels</h2>
+            <p>Points: <span id="pointsDisplay">0</span></p>
+            <ul class="level-list" id="levelList"></ul>
+        </div>
+        <div class="content">
+            <button class="back-button" onclick="goBack()">Back to Home</button>
+            <div class="memory-container" id="memoryContainer">
+                <h2>Level <span id="levelDisplay">1</span>: <span id="puzzleTitle"></span></h2>
+                <p>Points: <span id="gamePointsDisplay">0</span></p>
+                <p class="instructions" id="instructions"></p>
+                <div class="memory-grid" id="memoryGrid"></div>
+            </div>
+            <div class="cards-section">
+                <h2>Important Cards</h2>
+                <div class="card-grid" id="cardGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const levels = [
+            { size: 4, type: 'sequence', points: 15, unlock: 0, desc: 'Recall the sequence' },
+            { size: 4, type: 'pattern', points: 20, unlock: 15, desc: 'Memorize the pattern' },
+            { size: 4, type: 'number', points: 25, unlock: 35, desc: 'Number span test' },
+            { size: 5, type: 'sequence', points: 30, unlock: 60, desc: 'Longer sequence recall' },
+            { size: 5, type: 'pattern', points: 35, unlock: 90, desc: 'Complex pattern memory' },
+            { size: 5, type: 'number', points: 40, unlock: 125, desc: 'Advanced number span' },
+            { size: 6, type: 'sequence', points: 45, unlock: 165, desc: 'Extended sequence recall' },
+            { size: 6, type: 'pattern', points: 50, unlock: 210, desc: 'Intricate pattern memory' },
+            { size: 6, type: 'number', points: 55, unlock: 260, desc: 'Expert number span' },
+            { size: 6, type: 'sequence', points: 60, unlock: 315, desc: 'Master sequence challenge' }
+        ];
+
+        const importantCards = [
+            { title: "Pythagorean Theorem", content: "a² + b² = c²" },
+            { title: "Quadratic Formula", content: "x = (-b ± √(b² - 4ac)) / 2a" },
+            { title: "Area of a Circle", content: "A = πr²" },
+            { title: "Volume of a Sphere", content: "V = (4/3)πr³" },
+            { title: "Slope Formula", content: "m = (y₂ - y₁) / (x₂ - x₁)" },
+            { title: "Distance Formula", content: "d = √((x₂ - x₁)² + (y₂ - y₁)²)" },
+            { title: "Circumference of a Circle", content: "C = 2πr" },
+            { title: "Area of a Triangle", content: "A = (1/2)bh" },
+            { title: "Sum of Angles in Triangle", content: "180°" },
+            { title: "Exponential Growth", content: "A = P(1 + r/n)^(nt)" },
+            { title: "Logarithm Property", content: "log(ab) = log(a) + log(b)" },
+            { title: "Sine Rule", content: "a/sin(A) = b/sin(B) = c/sin(C)" }
+        ];
+
+        let totalPoints = parseInt(localStorage.getItem('quizPoints') || '0');
+        let completedLevels = JSON.parse(localStorage.getItem('memoryCompletedLevels') || '[]');
+        let unlockedLevels = JSON.parse(localStorage.getItem('memoryUnlockedLevels') || '[0]');
+        let selectedLevel = null;
+        let gameState = [];
+        let userInput = [];
+        let sequenceShown = false;
+
+        const levelList = document.getElementById('levelList');
+        const memoryContainer = document.getElementById('memoryContainer');
+        const memoryGrid = document.getElementById('memoryGrid');
+        const pointsDisplay = document.getElementById('pointsDisplay');
+        const gamePointsDisplay = document.getElementById('gamePointsDisplay');
+        const levelDisplay = document.getElementById('levelDisplay');
+        const puzzleTitle = document.getElementById('puzzleTitle');
+        const instructions = document.getElementById('instructions');
+        const cardGrid = document.getElementById('cardGrid');
+
+        function initializeLevelSelection() {
+            console.log('Initializing level selection...');
+            if (!levelList) {
+                console.error('levelList element not found!');
+                return;
+            }
+            pointsDisplay.textContent = totalPoints;
+            levelList.innerHTML = '';
+            levels.forEach((level, index) => {
+                const li = document.createElement('li');
+                li.className = 'level-item';
+                li.innerHTML = `Level ${index + 1}: ${level.desc} (${level.points} pts)`;
+                if (completedLevels.includes(index)) {
+                    li.classList.add('completed');
+                    li.title = 'Completed';
+                    li.addEventListener('click', () => selectLevel(index));
+                } else if (unlockedLevels.includes(index)) {
+                    li.classList.add('unlocked');
+                    li.addEventListener('click', () => selectLevel(index));
+                } else {
+                    li.classList.add('locked');
+                    li.title = `Earn ${level.unlock} points to unlock`;
+                    if (totalPoints >= level.unlock) {
+                        const unlockButton = document.createElement('button');
+                        unlockButton.className = 'unlock-button';
+                        unlockButton.textContent = `Unlock (${level.unlock} pts)`;
+                        unlockButton.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            unlockLevel(index);
+                        });
+                        li.appendChild(unlockButton);
+                    }
+                }
+                levelList.appendChild(li);
+            });
+            console.log('Levels rendered:', levels.length);
+            initializeCards();
+        }
+
+        function unlockLevel(index) {
+            console.log(`Attempting to unlock Level ${index + 1}`);
+            if (totalPoints >= levels[index].unlock) {
+                totalPoints -= levels[index].unlock;
+                if (!unlockedLevels.includes(index)) {
+                    unlockedLevels.push(index);
+                }
+                localStorage.setItem('quizPoints', totalPoints);
+                localStorage.setItem('memoryUnlockedLevels', JSON.stringify(unlockedLevels));
+                alert(`Level ${index + 1} unlocked! ${levels[index].unlock} points redeemed.`);
+                initializeLevelSelection();
+            } else {
+                alert(`Not enough points! You need ${levels[index].unlock} points to unlock Level ${index + 1}.`);
+            }
+        }
+
+        function selectLevel(index) {
+            console.log(`Selected Level ${index + 1}, Unlocked: ${unlockedLevels.includes(index)}, Completed: ${completedLevels.includes(index)}`);
+            selectedLevel = index;
+            if (!unlockedLevels.includes(index) && !completedLevels.includes(index)) {
+                alert(`Level ${selectedLevel + 1} is locked! Redeem it with points or complete previous levels.`);
+                return;
+            }
+            memoryContainer.style.display = 'block';
+            initializeGame();
+        }
+
+        function initializeGame() {
+            const size = levels[selectedLevel].size;
+            memoryGrid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            gameState = generateGame(levels[selectedLevel], selectedLevel);
+            userInput = [];
+            sequenceShown = false;
+            levelDisplay.textContent = selectedLevel + 1;
+            puzzleTitle.textContent = levels[selectedLevel].desc;
+            gamePointsDisplay.textContent = totalPoints;
+            setInstructions();
+            console.log(`Initialized Level ${selectedLevel + 1}, Game State:`, gameState);
+            showSequence();
+        }
+
+        function setInstructions() {
+            const difficulty = selectedLevel + 3;
+            switch (levels[selectedLevel].type) {
+                case 'sequence':
+                    instructions.textContent = `Memorize the sequence of ${difficulty} flashing tiles, then click them in order.`;
+                    break;
+                case 'pattern':
+                    instructions.textContent = `Memorize the pattern of colored tiles (approx. ${(difficulty / 20 * 100).toFixed(0)}% red), then recreate it.`;
+                    break;
+                case 'number':
+                    instructions.textContent = `Memorize the sequence of ${difficulty} numbers, then click the tiles to input them in order.`;
+                    break;
+            }
+        }
+
+        function generateGame(level, levelIndex) {
+            const size = level.size;
+            const totalTiles = size * size;
+            const difficulty = levelIndex + 3; // 3 to 12 items to recall
+            switch (level.type) {
+                case 'sequence': {
+                    const sequence = new Set();
+                    while (sequence.size < difficulty) {
+                        sequence.add(Math.floor(Math.random() * totalTiles));
+                    }
+                    return Array.from(sequence);
+                }
+                case 'pattern':
+                    return Array(totalTiles).fill('').map(() => Math.random() > (1 - difficulty / 20) ? 'red' : '');
+                case 'number':
+                    return Array(difficulty).fill(0).map(() => Math.floor(Math.random() * 9) + 1);
+            }
+        }
+
+        function showSequence() {
+            memoryGrid.innerHTML = '';
+            const size = levels[selectedLevel].size;
+            const totalTiles = size * size;
+            for (let i = 0; i < totalTiles; i++) {
+                const card = document.createElement('div');
+                card.className = 'memory-card';
+                card.dataset.index = i;
+                card.addEventListener('click', () => handleClick(i));
+                memoryGrid.appendChild(card);
+            }
+
+            if (levels[selectedLevel].type === 'sequence') {
+                let step = 0;
+                const interval = setInterval(() => {
+                    if (step < gameState.length) {
+                        const idx = gameState[step];
+                        const card = memoryGrid.children[idx];
+                        card.classList.add('active');
+                        setTimeout(() => card.classList.remove('active'), 500);
+                        step++;
+                    } else {
+                        clearInterval(interval);
+                        sequenceShown = true;
+                        console.log('Sequence shown, awaiting input');
+                    }
+                }, 1000);
+            } else if (levels[selectedLevel].type === 'pattern') {
+                gameState.forEach((color, idx) => {
+                    if (color) memoryGrid.children[idx].style.backgroundColor = color;
+                });
+                setTimeout(() => {
+                    Array.from(memoryGrid.children).forEach(card => card.style.backgroundColor = '#e0e0e0');
+                    sequenceShown = true;
+                    console.log('Pattern shown, awaiting input');
+                }, 2000);
+            } else if (levels[selectedLevel].type === 'number') {
+                let step = 0;
+                const interval = setInterval(() => {
+                    if (step < gameState.length) {
+                        const idx = step % size; // Use first row, cycling if needed
+                        const card = memoryGrid.children[idx];
+                        card.textContent = gameState[step];
+                        setTimeout(() => card.textContent = '', 500);
+                        step++;
+                    } else {
+                        clearInterval(interval);
+                        sequenceShown = true;
+                        console.log('Numbers shown, awaiting input');
+                    }
+                }, 1000);
+            }
+        }
+
+        function handleClick(index) {
+            if (!sequenceShown) return;
+            const card = memoryGrid.children[index];
+            if (levels[selectedLevel].type === 'sequence') {
+                userInput.push(index);
+                card.classList.add('active');
+                setTimeout(() => card.classList.remove('active'), 200);
+                if (userInput.length === gameState.length) {
+                    checkWin();
+                }
+            } else if (levels[selectedLevel].type === 'pattern') {
+                card.style.backgroundColor = card.style.backgroundColor === 'red' ? '#e0e0e0' : 'red';
+                userInput[index] = card.style.backgroundColor === 'red' ? 'red' : '';
+                if (userInput.length === memoryGrid.children.length || userInput.filter(x => x).length === gameState.filter(x => x).length) {
+                    checkWin();
+                }
+            } else if (levels[selectedLevel].type === 'number') {
+                const current = card.textContent === '' ? 0 : parseInt(card.textContent);
+                card.textContent = String((current + 1) % 10 || '');
+                userInput[index] = card.textContent ? parseInt(card.textContent) : 0;
+                if (userInput.filter(x => x !== undefined && x !== 0).length === gameState.length) {
+                    checkWin();
+                }
+            }
+            console.log('User Input:', userInput);
+        }
+
+        function checkWin() {
+            let isCorrect = false;
+            if (levels[selectedLevel].type === 'sequence') {
+                isCorrect = userInput.every((val, i) => val === gameState[i]);
+            } else if (levels[selectedLevel].type === 'pattern') {
+                const current = Array.from(memoryGrid.children).map(card => card.style.backgroundColor === 'red' ? 'red' : '');
+                isCorrect = current.every((val, i) => val === gameState[i]);
+            } else if (levels[selectedLevel].type === 'number') {
+                const input = Array.from(memoryGrid.children).slice(0, gameState.length).map(card => card.textContent ? parseInt(card.textContent) : 0);
+                isCorrect = gameState.every((val, i) => val === input[i]);
+            }
+
+            console.log('Checking win:', { gameState, userInput, isCorrect });
+            if (isCorrect) {
+                completeLevel();
+            } else {
+                memoryGrid.classList.add('error');
+                setTimeout(() => {
+                    memoryGrid.classList.remove('error');
+                    alert('Incorrect! Try again.');
+                    initializeGame(); // Restart the level
+                }, 500);
+            }
+        }
+
+        function completeLevel() {
+            totalPoints += levels[selectedLevel].points;
+            if (!completedLevels.includes(selectedLevel)) {
+                completedLevels.push(selectedLevel);
+            }
+            localStorage.setItem('quizPoints', totalPoints);
+            localStorage.setItem('memoryCompletedLevels', JSON.stringify(completedLevels));
+            alert(`Congratulations! Level ${selectedLevel + 1} completed! +${levels[selectedLevel].points} points`);
+            memoryContainer.style.display = 'none';
+            initializeLevelSelection();
+        }
+
+        function initializeCards() {
+            if (!cardGrid) {
+                console.error('cardGrid element not found!');
+                return;
+            }
+            cardGrid.innerHTML = '';
+            importantCards.forEach(cardData => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `<h3>${cardData.title}</h3><p>${cardData.content}</p>`;
+                cardGrid.appendChild(card);
+            });
+            console.log('Important Cards rendered:', importantCards.length);
+        }
+
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM fully loaded');
+            initializeLevelSelection();
+        });
+    </script>
+</body>
+</html>

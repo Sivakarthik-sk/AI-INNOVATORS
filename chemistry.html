@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chemistry Quiz - OLabs</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f6f5;
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background-color: #005670;
+            color: white;
+            padding: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .header nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .nav-links a:hover {
+            color: #ffd700;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            flex: 1;
+            position: relative;
+        }
+        .level-selector, .quiz-container, .result-container {
+            padding: 1.5rem;
+        }
+        .level-selector h2, .quiz-container h2, .result-container h2 {
+            color: #005670;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .level-buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(3, auto);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .level-buttons button:nth-child(1) { grid-area: 1 / 1; }
+        .level-buttons button:nth-child(2) { grid-area: 1 / 2; }
+        .level-buttons button:nth-child(3) { grid-area: 1 / 3; }
+        .level-buttons button:nth-child(4) { grid-area: 1 / 4; }
+        .level-buttons button:nth-child(5) { grid-area: 1 / 5; }
+        .level-buttons button:nth-child(6) { grid-area: 2 / 1; }
+        .level-buttons button:nth-child(7) { grid-area: 2 / 2; }
+        .level-buttons button:nth-child(8) { grid-area: 2 / 3; }
+        .level-buttons button:nth-child(9) { grid-area: 2 / 4; }
+        .level-buttons button:nth-child(10) { grid-area: 2 / 5; }
+        .level-buttons button:nth-child(11) { grid-area: 3 / 1; }
+        .level-buttons button:nth-child(12) { grid-area: 3 / 2; }
+        .level-buttons button:nth-child(13) { grid-area: 3 / 3; }
+        .level-buttons button:nth-child(14) { grid-area: 3 / 4; }
+        .level-buttons button:nth-child(15) { grid-area: 3 / 5; }
+        .timer {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            font-weight: bold;
+            color: #005670;
+        }
+        .question {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+        .options {
+            display: grid;
+            gap: 1rem;
+        }
+        .option {
+            background: #eef4f7;
+            padding: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+        .option.correct {
+            background: #22c55e !important;
+            color: white;
+        }
+        .option.incorrect {
+            background: #ef4444 !important;
+            color: white;
+        }
+        .option:hover {
+            background: #d1e0e6;
+            transform: translateY(-2px);
+        }
+        .selected {
+            pointer-events: none;
+        }
+        .reason {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 5px;
+            font-size: 1rem;
+            text-align: center;
+            display: none;
+        }
+        .reason.correct {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        .reason.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+        .back-button, .restart-button, .next-button, .prev-button, .level-button, .speech-button {
+            background: #005670;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+            font-size: 1rem;
+        }
+        .level-button.easy {
+            background: #83fd08;
+            color: black;
+        }
+        .level-button.medium {
+            background: #fdfd08;
+            color: black;
+        }
+        .level-button.difficult {
+            background: #fd0808;
+            color: white;
+        }
+        .level-button.locked {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .speech-button {
+            background: #007bff; /* Distinct color for accessibility */
+        }
+        .back-button:hover, .restart-button:hover, .next-button:hover, .prev-button:hover, 
+        .level-button:not(.locked):hover, .speech-button:hover {
+            background: #003d52;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .speech-button:hover {
+            background: #0056b3;
+        }
+        .next-button:disabled, .prev-button:disabled, .speech-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .footer {
+            background-color: #005670;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            margin-top: 20px;
+        }
+        .emoji-container {
+            position: absolute;
+            top: 20px;
+            bottom: 20px;
+            width: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            font-size: 2rem;
+            opacity: 0.3;
+            z-index: 1;
+        }
+        .emoji-container.left {
+            left: 10px;
+        }
+        .emoji-container.right {
+            right: 10px;
+        }
+        .emoji-container div {
+            animation: float 4s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { 
+                transform: translateY(0) translateX(0); 
+            }
+            25% { 
+                transform: translateY(-20px) translateX(-10px); 
+            }
+            75% { 
+                transform: translateY(-20px) translateX(10px); 
+            }
+        }
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 15px;
+            }
+            .header nav {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .nav-links {
+                flex-direction: column;
+                text-align: center;
+            }
+            .level-buttons {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.5rem;
+            }
+            .emoji-container {
+                display: none;
+            }
+        }
+        @media (max-width: 480px) {
+            .level-buttons {
+                grid-template-columns: 1fr;
+            }
+            .question {
+                font-size: 1.2rem;
+            }
+            .option {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav>
+            <div class="logo" id="subject-title">OLabs Quiz</div>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="#">Experiments</a>
+                <a href="#">Resources</a>
+                <a href="#">Contact</a>
+            </div>
+        </nav>
+    </header>
+
+    <div class="emoji-container left">
+        <div>🧪</div>
+        <div>⚗</div>
+        <div>🔬</div>
+        <div>🧬</div>
+    </div>
+
+    <div class="emoji-container right">
+        <div>⚛</div>
+        <div>💧</div>
+        <div>🧯</div>
+        <div>🌡</div>
+    </div>
+
+    <div class="container">
+        <button class="back-button" onclick="goBack()">← Back to Home</button>
+        <div class="level-selector" id="level-selector">
+            <h2>Select a Level</h2>
+            <div class="level-buttons">
+                <button class="level-button easy" onclick="startQuiz(1)">Level 1</button>
+                <button class="level-button easy" onclick="startQuiz(2)">Level 2</button>
+                <button class="level-button easy" onclick="startQuiz(3)">Level 3</button>
+                <button class="level-button easy" onclick="startQuiz(4)">Level 4</button>
+                <button class="level-button easy" onclick="startQuiz(5)">Level 5</button>
+                <button class="level-button medium" onclick="startQuiz(6)">Level 6</button>
+                <button class="level-button medium" onclick="startQuiz(7)">Level 7</button>
+                <button class="level-button medium" onclick="startQuiz(8)">Level 8</button>
+                <button class="level-button medium" onclick="startQuiz(9)">Level 9</button>
+                <button class="level-button medium" onclick="startQuiz(10)">Level 10</button>
+                <button class="level-button difficult" onclick="startQuiz(11)">Level 11</button>
+                <button class="level-button difficult" onclick="startQuiz(12)">Level 12</button>
+                <button class="level-button difficult" onclick="startQuiz(13)">Level 13</button>
+                <button class="level-button difficult" onclick="startQuiz(14)">Level 14</button>
+                <button class="level-button difficult" onclick="startQuiz(15)">Level 15</button>
+            </div>
+        </div>
+        <div class="quiz-container" id="quiz-container" style="display: none;">
+            <div id="question-container">
+                <div class="timer" id="timer">Time Left: --:--</div>
+                <div class="question" id="question">Loading question...</div>
+                <div class="options" id="options"></div>
+                <div class="reason" id="reason"></div>
+                <div>
+                    <button class="prev-button" id="prev-button" onclick="prevQuestion()" disabled>Previous</button>
+                    <button class="next-button" id="next-button" onclick="nextQuestion()" disabled>Next</button>
+                    <button class="speech-button" id="speech-button" onclick="speakQuestion()">Speech</button>
+                </div>
+            </div>
+        </div>
+        <div class="result-container" id="result-container" style="display: none;">
+            <h2>Quiz Completed! 🎉</h2>
+            <p>Your total score: <span id="final-score">0</span></p>
+            <button class="restart-button" onclick="restartQuiz()">Restart Quiz 🔁</button>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>© 2025 OLabs. All rights reserved.</p>
+    </footer>
+
+    <script>
+        let score = 0;
+        let currentQuestionIndex = 0;
+        let timeLeft = 0;
+        let timerInterval;
+        let shuffledQuestions = [];
+        let selectedLevel = 1;
+        let answers = new Array(15).fill(null);
+        let subject = new URLSearchParams(window.location.search).get('subject') || 'chemistry';
+    
+        document.getElementById('subject-title').textContent = `OLabs ${subject.charAt(0).toUpperCase() + subject.slice(1)} Quiz`;
+    
+        // Speech Recognition setup
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognitionAvailable = false;
+        let recognition;
+    
+        if (SpeechRecognition) {
+            recognitionAvailable = true;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+        } else {
+            console.log('Speech Recognition API not supported in this browser.');
+            // Update UI to inform user
+            document.getElementById('speech-button').title = 'Speech recognition not supported in this browser.';
+        }
+    
+        const levels = {
+            chemistry: {
+                1: [
+                    { q: "What is the atomic number of Carbon?", options: ["6", "12", "8", "14"], answer: 0, reason: "Carbon has 6 protons, defining its atomic number." },
+                    { q: "What is the chemical formula of water?", options: ["CO₂", "H₂O", "O₂", "H₂SO₄"], answer: 1, reason: "Water consists of two hydrogen atoms and one oxygen atom." },
+                    { q: "Which gas is most abundant in Earth’s atmosphere?", options: ["Oxygen", "Carbon dioxide", "Nitrogen", "Argon"], answer: 2, reason: "Nitrogen makes up about 78% of the atmosphere." },
+                    { q: "What is the SI unit of amount of substance?", options: ["Gram", "Liter", "Mole", "Kilogram"], answer: 2, reason: "The mole is the SI unit for amount of substance." },
+                    { q: "What type of bond involves electron sharing?", options: ["Ionic", "Covalent", "Metallic", "Hydrogen"], answer: 1, reason: "Covalent bonds form by sharing electrons between atoms." },
+                    { q: "Which element has the symbol Na?", options: ["Nitrogen", "Sodium", "Neon", "Nickel"], answer: 1, reason: "Na is the symbol for sodium." },
+                    { q: "What is the pH of a neutral solution?", options: ["0", "7", "10", "14"], answer: 1, reason: "A neutral solution has a pH of 7 at 25°C." },
+                    { q: "Which gas is known as laughing gas?", options: ["CO₂", "N₂O", "O₂", "NO₂"], answer: 1, reason: "Nitrous oxide (N₂O) is called laughing gas." },
+                    { q: "What is the valency of oxygen?", options: ["1", "2", "3", "4"], answer: 1, reason: "Oxygen typically has a valency of 2." },
+                    { q: "Which element is a noble gas?", options: ["Hydrogen", "Helium", "Oxygen", "Nitrogen"], answer: 1, reason: "Helium is a noble gas with a stable electron configuration." },
+                    { q: "What is the formula of table salt?", options: ["NaCl", "KCl", "MgCl₂", "CaCl₂"], answer: 0, reason: "Table salt is sodium chloride, NaCl." },
+                    { q: "What forms when a metal reacts with oxygen?", options: ["Acid", "Base", "Oxide", "Salt"], answer: 2, reason: "Metals form oxides when they react with oxygen." },
+                    { q: "What is the approximate atomic mass of hydrogen?", options: ["1 u", "2 u", "3 u", "4 u"], answer: 0, reason: "Hydrogen’s atomic mass is about 1 u." },
+                    { q: "Which acid is found in vinegar?", options: ["Hydrochloric acid", "Sulfuric acid", "Acetic acid", "Citric acid"], answer: 2, reason: "Acetic acid gives vinegar its sour taste." },
+                    { q: "What gas do plants absorb during photosynthesis?", options: ["Oxygen", "Nitrogen", "Carbon dioxide", "Hydrogen"], answer: 2, reason: "Plants use carbon dioxide in photosynthesis." }
+                ],
+                2: [
+                    { q: "What is the atomic number of oxygen?", options: ["6", "7", "8", "9"], answer: 2, reason: "Oxygen has 8 protons." },
+                    { q: "What is the formula of carbon dioxide?", options: ["CO", "CO₂", "C₂O", "C₂O₂"], answer: 1, reason: "Carbon dioxide is CO₂." },
+                    { q: "Which gas is second most abundant in the atmosphere?", options: ["Nitrogen", "Oxygen", "Argon", "Carbon dioxide"], answer: 1, reason: "Oxygen is about 21% of the atmosphere." },
+                    { q: "What is the SI unit of temperature?", options: ["Celsius", "Fahrenheit", "Kelvin", "Rankine"], answer: 2, reason: "Kelvin is the SI unit of temperature." },
+                    { q: "What bond type is in NaCl?", options: ["Covalent", "Ionic", "Metallic", "Hydrogen"], answer: 1, reason: "NaCl has ionic bonds between Na⁺ and Cl⁻." },
+                    { q: "Which element has the symbol K?", options: ["Potassium", "Krypton", "Calcium", "Krypton"], answer: 0, reason: "K is the symbol for potassium." },
+                    { q: "What is the pH of an acidic solution?", options: ["7", ">7", "<7", "14"], answer: 2, reason: "Acidic solutions have a pH less than 7." },
+                    { q: "Which gas is used in balloons for lift?", options: ["Hydrogen", "Helium", "Nitrogen", "Oxygen"], answer: 1, reason: "Helium is lighter than air and non-flammable." },
+                    { q: "What is the valency of nitrogen?", options: ["1", "2", "3", "4"], answer: 2, reason: "Nitrogen typically has a valency of 3." },
+                    { q: "Which element is a halogen?", options: ["Chlorine", "Sulfur", "Phosphorus", "Magnesium"], answer: 0, reason: "Chlorine is in Group 17, the halogens." },
+                    { q: "What is the formula of sulfuric acid?", options: ["HCl", "HNO₃", "H₂SO₄", "H₃PO₄"], answer: 2, reason: "Sulfuric acid is H₂SO₄." },
+                    { q: "What forms when a non-metal reacts with oxygen?", options: ["Base", "Oxide", "Salt", "Metal"], answer: 1, reason: "Non-metals form oxides, often acidic." },
+                    { q: "What is the atomic mass of oxygen (approx.)?", options: ["12 u", "14 u", "16 u", "18 u"], answer: 2, reason: "Oxygen’s atomic mass is about 16 u." },
+                    { q: "Which base is in soap?", options: ["NaOH", "HCl", "H₂SO₄", "NH₃"], answer: 0, reason: "Sodium hydroxide (NaOH) is used in soap making." },
+                    { q: "What gas is produced when metals react with acids?", options: ["Oxygen", "Hydrogen", "Carbon dioxide", "Nitrogen"], answer: 1, reason: "Hydrogen gas is released in such reactions." }
+                ],
+                3: [
+                    { q: "What is the atomic number of nitrogen?", options: ["5", "6", "7", "8"], answer: 2, reason: "Nitrogen has 7 protons." },
+                    { q: "What is the formula of ammonia?", options: ["NH₃", "NH₄", "N₂H₄", "NO₂"], answer: 0, reason: "Ammonia is NH₃." },
+                    { q: "Which gas is a trace element in the atmosphere?", options: ["Oxygen", "Nitrogen", "Argon", "Helium"], answer: 2, reason: "Argon is about 0.93% of the atmosphere." },
+                    { q: "What is the SI unit of pressure?", options: ["Pascal", "Bar", "Atmosphere", "Torr"], answer: 0, reason: "Pascal is the SI unit of pressure." },
+                    { q: "What bond type is in O₂?", options: ["Ionic", "Covalent", "Metallic", "Hydrogen"], answer: 1, reason: "O₂ has a double covalent bond." },
+                    { q: "Which element has the symbol Fe?", options: ["Fluorine", "Iron", "Francium", "Fermium"], answer: 1, reason: "Fe is the symbol for iron." },
+                    { q: "What is the pH of a basic solution?", options: ["<7", "7", ">7", "0"], answer: 2, reason: "Basic solutions have a pH greater than 7." },
+                    { q: "Which gas is produced in photosynthesis?", options: ["CO₂", "O₂", "N₂", "H₂"], answer: 1, reason: "Oxygen is a byproduct of photosynthesis." },
+                    { q: "What is the valency of chlorine?", options: ["1", "2", "3", "4"], answer: 0, reason: "Chlorine typically has a valency of 1." },
+                    { q: "Which element is a metalloid?", options: ["Silicon", "Sulfur", "Sodium", "Silver"], answer: 0, reason: "Silicon has properties of both metals and non-metals." },
+                    { q: "What is the formula of hydrochloric acid?", options: ["HCl", "H₂SO₄", "HNO₃", "H₃PO₄"], answer: 0, reason: "Hydrochloric acid is HCl." },
+                    { q: "What type of oxide is CO₂?", options: ["Basic", "Acidic", "Neutral", "Amphoteric"], answer: 1, reason: "CO₂ forms carbonic acid with water, making it acidic." },
+                    { q: "What is the atomic mass of nitrogen (approx.)?", options: ["12 u", "14 u", "16 u", "18 u"], answer: 1, reason: "Nitrogen’s atomic mass is about 14 u." },
+                    { q: "Which acid is in lemon juice?", options: ["Acetic acid", "Citric acid", "Sulfuric acid", "Nitric acid"], answer: 1, reason: "Citric acid gives lemons their sour taste." },
+                    { q: "What gas is used in respiration?", options: ["Nitrogen", "Oxygen", "Carbon dioxide", "Helium"], answer: 1, reason: "Oxygen is essential for cellular respiration." }
+                ],
+                4: [
+                    { q: "What is the atomic number of fluorine?", options: ["7", "8", "9", "10"], answer: 2, reason: "Fluorine has 9 protons." },
+                    { q: "What is the formula of methane?", options: ["CH₄", "C₂H₅", "CH₃OH", "C₂H₂"], answer: 0, reason: "Methane is CH₄." },
+                    { q: "Which gas is a greenhouse gas?", options: ["O₂", "N₂", "CO₂", "H₂"], answer: 2, reason: "Carbon dioxide traps heat in the atmosphere." },
+                    { q: "What is the SI unit of volume?", options: ["Liter", "Cubic meter", "Gallon", "Milliliter"], answer: 1, reason: "Cubic meter is the SI unit of volume." },
+                    { q: "What bond type is in H₂O?", options: ["Ionic", "Covalent", "Metallic", "Ionic and Covalent"], answer: 1, reason: "H₂O has covalent bonds between H and O." },
+                    { q: "Which element has the symbol Ca?", options: ["Carbon", "Calcium", "Cobalt", "Copper"], answer: 1, reason: "Ca is the symbol for calcium." },
+                    { q: "What is the pH range of acids?", options: ["0-14", "7-14", "0-7", "7"], answer: 2, reason: "Acids have a pH from 0 to less than 7." },
+                    { q: "Which gas is used in welding?", options: ["Oxygen", "Acetylene", "Nitrogen", "Helium"], answer: 1, reason: "Acetylene is commonly used in welding." },
+                    { q: "What is the valency of sulfur?", options: ["1", "2", "4", "6"], answer: 1, reason: "Sulfur typically has a valency of 2." },
+                    { q: "Which element is a transition metal?", options: ["Iron", "Sodium", "Potassium", "Magnesium"], answer: 0, reason: "Iron is a transition metal in the d-block." },
+                    { q: "What is the formula of nitric acid?", options: ["HNO₃", "HCl", "H₂SO₄", "H₃PO₄"], answer: 0, reason: "Nitric acid is HNO₃." },
+                    { q: "What type of oxide is Na₂O?", options: ["Acidic", "Basic", "Neutral", "Amphoteric"], answer: 1, reason: "Na₂O is a basic oxide, forming NaOH with water." },
+                    { q: "What is the atomic mass of fluorine (approx.)?", options: ["16 u", "19 u", "21 u", "23 u"], answer: 1, reason: "Fluorine’s atomic mass is about 19 u." },
+                    { q: "Which base is used in antacids?", options: ["NaOH", "Mg(OH)₂", "HCl", "NH₃"], answer: 1, reason: "Magnesium hydroxide neutralizes stomach acid." },
+                    { q: "What gas is produced in combustion?", options: ["Oxygen", "Nitrogen", "Carbon dioxide", "Helium"], answer: 2, reason: "Combustion produces CO₂ as a product." }
+                ],
+                5: [
+                    { q: "What is the atomic number of neon?", options: ["8", "9", "10", "11"], answer: 2, reason: "Neon has 10 protons." },
+                    { q: "What is the formula of ethanol?", options: ["CH₃OH", "C₂H₅OH", "CH₃COOH", "C₂H₄"], answer: 1, reason: "Ethanol is C₂H₅OH." },
+                    { q: "Which gas is used in light bulbs?", options: ["Argon", "Oxygen", "Nitrogen", "Hydrogen"], answer: 0, reason: "Argon prevents filament oxidation in bulbs." },
+                    { q: "What is the SI unit of mass?", options: ["Gram", "Kilogram", "Pound", "Ton"], answer: 1, reason: "Kilogram is the SI unit of mass." },
+                    { q: "What bond type is in metals?", options: ["Ionic", "Covalent", "Metallic", "Hydrogen"], answer: 2, reason: "Metals have metallic bonds with delocalized electrons." },
+                    { q: "Which element has the symbol Mg?", options: ["Manganese", "Magnesium", "Mercury", "Molybdenum"], answer: 1, reason: "Mg is the symbol for magnesium." },
+                    { q: "What is the pH range of bases?", options: ["0-7", "7", ">7", "0-14"], answer: 2, reason: "Bases have a pH greater than 7." },
+                    { q: "Which gas is in soda bubbles?", options: ["O₂", "N₂", "CO₂", "H₂"], answer: 2, reason: "Carbon dioxide provides carbonation in soda." },
+                    { q: "What is the valency of carbon?", options: ["2", "3", "4", "5"], answer: 2, reason: "Carbon typically has a valency of 4." },
+                    { q: "Which element is an alkali metal?", options: ["Lithium", "Calcium", "Iron", "Aluminum"], answer: 0, reason: "Lithium is in Group 1, the alkali metals." },
+                    { q: "What is the formula of phosphoric acid?", options: ["H₃PO₄", "HNO₃", "HCl", "H₂SO₄"], answer: 0, reason: "Phosphoric acid is H₃PO₄." },
+                    { q: "What type of oxide is Al₂O₃?", options: ["Acidic", "Basic", "Neutral", "Amphoteric"], answer: 3, reason: "Al₂O₃ reacts with both acids and bases." },
+                    { q: "What is the atomic mass of neon (approx.)?", options: ["18 u", "20 u", "22 u", "24 u"], answer: 1, reason: "Neon’s atomic mass is about 20 u." },
+                    { q: "Which acid is in car batteries?", options: ["HCl", "HNO₃", "H₂SO₄", "CH₃COOH"], answer: 2, reason: "Sulfuric acid is used in lead-acid batteries." },
+                    { q: "What gas is produced in fermentation?", options: ["O₂", "CO₂", "N₂", "H₂"], answer: 1, reason: "Carbon dioxide is a byproduct of fermentation." }
+                ],
+                6: [
+                    { q: "What is the atomic number of sodium?", options: ["10", "11", "12", "13"], answer: 1, reason: "Sodium has 11 protons." },
+                    { q: "What is the formula of glucose?", options: ["C₆H₁₂O₆", "C₂H₅OH", "CH₃COOH", "C₆H₆"], answer: 0, reason: "Glucose is C₆H₁₂O₆." },
+                    { q: "Which gas is used in anesthesia?", options: ["N₂O", "O₂", "CO₂", "N₂"], answer: 0, reason: "Nitrous oxide is used as an anesthetic." },
+                    { q: "What is the SI unit of energy?", options: ["Watt", "Joule", "Newton", "Pascal"], answer: 1, reason: "Joule is the SI unit of energy." },
+                    { q: "What bond type is in NH₃?", options: ["Ionic", "Covalent", "Metallic", "Ionic and Covalent"], answer: 1, reason: "NH₃ has covalent bonds between N and H." },
+                    { q: "Which element has the symbol Al?", options: ["Argon", "Aluminum", "Antimony", "Arsenic"], answer: 1, reason: "Al is the symbol for aluminum." },
+                    { q: "What is the pH of pure water at 25°C?", options: ["0", "7", "14", "10"], answer: 1, reason: "Pure water is neutral with a pH of 7." },
+                    { q: "Which gas is in car airbags?", options: ["N₂", "O₂", "CO₂", "H₂"], answer: 0, reason: "Nitrogen inflates airbags safely." },
+                    { q: "What is the valency of phosphorus?", options: ["2", "3", "5", "4"], answer: 2, reason: "Phosphorus typically has a valency of 5." },
+                    { q: "Which element is an alkaline earth metal?", options: ["Sodium", "Magnesium", "Iron", "Lithium"], answer: 1, reason: "Magnesium is in Group 2." },
+                    { q: "What is the formula of carbon monoxide?", options: ["CO", "CO₂", "C₂O", "C₂O₂"], answer: 0, reason: "Carbon monoxide is CO." },
+                    { q: "What type of oxide is SO₂?", options: ["Basic", "Acidic", "Neutral", "Amphoteric"], answer: 1, reason: "SO₂ forms sulfurous acid with water." },
+                    { q: "What is the atomic mass of sodium (approx.)?", options: ["20 u", "23 u", "25 u", "27 u"], answer: 1, reason: "Sodium’s atomic mass is about 23 u." },
+                    { q: "Which base is in limewater?", options: ["NaOH", "Ca(OH)₂", "NH₃", "KOH"], answer: 1, reason: "Calcium hydroxide is used in limewater." },
+                    { q: "What gas is produced in electrolysis of water?", options: ["CO₂", "O₂ & H₂", "N₂", "Cl₂"], answer: 1, reason: "Electrolysis splits water into O₂ and H₂." }
+                ],
+                7: [
+                    { q: "What is the atomic number of magnesium?", options: ["11", "12", "13", "14"], answer: 1, reason: "Magnesium has 12 protons." },
+                    { q: "What is the formula of acetic acid?", options: ["CH₃COOH", "C₂H₅OH", "CH₃OH", "HCOOH"], answer: 0, reason: "Acetic acid is CH₃COOH." },
+                    { q: "Which gas is used in fire extinguishers?", options: ["O₂", "N₂", "CO₂", "H₂"], answer: 2, reason: "CO₂ smothers fires effectively." },
+                    { q: "What is the SI unit of force?", options: ["Newton", "Joule", "Watt", "Pascal"], answer: 0, reason: "Newton is the SI unit of force." },
+                    { q: "What bond type is in CO₂?", options: ["Ionic", "Covalent", "Metallic", "Hydrogen"], answer: 1, reason: "CO₂ has double covalent bonds." },
+                    { q: "Which element has the symbol Cu?", options: ["Cobalt", "Copper", "Calcium", "Chromium"], answer: 1, reason: "Cu is the symbol for copper." },
+                    { q: "What is the pH of 0.1 M HCl?", options: ["1", "2", "7", "13"], answer: 0, reason: "HCl is a strong acid; pH = -log(0.1) = 1." },
+                    { q: "Which gas is in the ozone layer?", options: ["O₂", "O₃", "N₂", "CO₂"], answer: 1, reason: "Ozone (O₃) protects from UV radiation." },
+                    { q: "What is the valency of iron in FeO?", options: ["1", "2", "3", "4"], answer: 1, reason: "Iron has a valency of 2 in FeO." },
+                    { q: "Which element is a noble gas?", options: ["Argon", "Sulfur", "Phosphorus", "Iron"], answer: 0, reason: "Argon is a noble gas in Group 18." },
+                    { q: "What is the formula of magnesium oxide?", options: ["MgO", "MgO₂", "Mg₂O", "MgOH"], answer: 0, reason: "Magnesium oxide is MgO." },
+                    { q: "What type of oxide is ZnO?", options: ["Acidic", "Basic", "Amphoteric", "Neutral"], answer: 2, reason: "ZnO reacts with both acids and bases." },
+                    { q: "What is the atomic mass of magnesium (approx.)?", options: ["22 u", "24 u", "26 u", "28 u"], answer: 1, reason: "Magnesium’s atomic mass is about 24 u." },
+                    { q: "Which acid is in stomach acid?", options: ["HNO₃", "H₂SO₄", "HCl", "CH₃COOH"], answer: 2, reason: "Hydrochloric acid aids digestion." },
+                    { q: "What gas is produced in rusting?", options: ["O₂", "H₂", "CO₂", "None"], answer: 3, reason: "Rusting consumes O₂ but produces no gas." }
+                ],
+                8: [
+                    { q: "What is the atomic number of aluminum?", options: ["12", "13", "14", "15"], answer: 1, reason: "Aluminum has 13 protons." },
+                    { q: "What is the formula of benzene?", options: ["C₆H₁₂", "C₆H₆", "C₆H₁₄", "C₆H₅OH"], answer: 1, reason: "Benzene is C₆H₆." },
+                    { q: "Which gas is used in lasers?", options: ["He", "Ne", "Ar", "Kr"], answer: 1, reason: "Neon is used in neon lasers." },
+                    { q: "What is the SI unit of time?", options: ["Second", "Minute", "Hour", "Day"], answer: 0, reason: "Second is the SI unit of time." },
+                    { q: "What bond type is in CH₄?", options: ["Ionic", "Covalent", "Metallic", "Hydrogen"], answer: 1, reason: "CH₄ has covalent bonds." },
+                    { q: "Which element has the symbol S?", options: ["Silicon", "Sulfur", "Sodium", "Silver"], answer: 1, reason: "S is the symbol for sulfur." },
+                    { q: "What is the pH of 0.01 M NaOH?", options: ["2", "7", "12", "14"], answer: 2, reason: "pOH = -log(0.01) = 2; pH = 14 - 2 = 12." },
+                    { q: "Which gas is in the stratosphere?", options: ["O₃", "CO₂", "N₂", "H₂"], answer: 0, reason: "Ozone (O₃) is prominent in the stratosphere." },
+                    { q: "What is the valency of aluminum?", options: ["1", "2", "3", "4"], answer: 2, reason: "Aluminum has a valency of 3." },
+                    { q: "Which element is a transition metal?", options: ["Copper", "Calcium", "Potassium", "Magnesium"], answer: 0, reason: "Copper is a d-block transition metal." },
+                    { q: "What is the formula of calcium carbonate?", options: ["CaCO₃", "CaO", "CaCl₂", "CaSO₄"], answer: 0, reason: "Calcium carbonate is CaCO₃." },
+                    { q: "What type of oxide is NO₂?", options: ["Basic", "Acidic", "Neutral", "Amphoteric"], answer: 1, reason: "NO₂ forms nitric acid with water." },
+                    { q: "What is the atomic mass of aluminum (approx.)?", options: ["25 u", "27 u", "29 u", "31 u"], answer: 1, reason: "Aluminum’s atomic mass is about 27 u." },
+                    { q: "Which base is in toothpaste?", options: ["NaOH", "Ca(OH)₂", "Mg(OH)₂", "NH₃"], answer: 2, reason: "Magnesium hydroxide is used in some toothpastes." },
+                    { q: "What gas is produced in photosynthesis?", options: ["CO₂", "O₂", "N₂", "H₂"], answer: 1, reason: "Oxygen is released during photosynthesis." }
+                ],
+                9: [
+                    { q: "What is the atomic number of silicon?", options: ["13", "14", "15", "16"], answer: 1, reason: "Silicon has 14 protons." },
+                    { q: "What is the formula of acetone?", options: ["CH₃COCH₃", "CH₃OH", "C₂H₅OH", "CH₃CHO"], answer: 0, reason: "Acetone is CH₃COCH₃." },
+                    { q: "Which gas is used in diving tanks?", options: ["O₂", "He", "N₂", "CO₂"], answer: 1, reason: "Helium reduces nitrogen narcosis." },
+                    { q: "What is the SI unit of electric current?", options: ["Volt", "Ampere", "Ohm", "Watt"], answer: 1, reason: "Ampere is the SI unit of current." },
+                    { q: "What bond type is in N₂?", options: ["Ionic", "Covalent", "Metallic", "Hydrogen"], answer: 1, reason: "N₂ has a triple covalent bond." },
+                    { q: "Which element has the symbol P?", options: ["Potassium", "Phosphorus", "Platinum", "Palladium"], answer: 1, reason: "P is the symbol for phosphorus." },
+                    { q: "What is the pH of 0.1 M NaOH?", options: ["1", "7", "13", "14"], answer: 2, reason: "pOH = -log(0.1) = 1; pH = 14 - 1 = 13." },
+                    { q: "Which gas is in cigarette smoke?", options: ["CO", "O₂", "N₂", "H₂"], answer: 0, reason: "Carbon monoxide is a toxic component." },
+                    { q: "What is the valency of silicon?", options: ["2", "3", "4", "5"], answer: 2, reason: "Silicon has a valency of 4." },
+                    { q: "Which element is a halogen?", options: ["Bromine", "Boron", "Beryllium", "Bismuth"], answer: 0, reason: "Bromine is in Group 17." },
+                    { q: "What is the formula of sodium hydroxide?", options: ["NaOH", "NaCl", "Na₂CO₃", "NaHCO₃"], answer: 0, reason: "Sodium hydroxide is NaOH." },
+                    { q: "What type of oxide is P₂O₅?", options: ["Basic", "Acidic", "Neutral", "Amphoteric"], answer: 1, reason: "P₂O₅ forms phosphoric acid with water." },
+                    { q: "What is the atomic mass of silicon (approx.)?", options: ["26 u", "28 u", "30 u", "32 u"], answer: 1, reason: "Silicon’s atomic mass is about 28 u." },
+                    { q: "Which acid is in soda?", options: ["HCl", "H₂SO₄", "H₃PO₄", "CH₃COOH"], answer: 2, reason: "Phosphoric acid adds acidity to soda." },
+                    { q: "What gas is used in balloons?", options: ["O₂", "N₂", "He", "CO₂"], answer: 2, reason: "Helium provides lift in balloons." }
+                ],
+                10: [
+                    { q: "What is the atomic number of phosphorus?", options: ["14", "15", "16", "17"], answer: 1, reason: "Phosphorus has 15 protons." },
+                    { q: "What is the formula of formaldehyde?", options: ["CH₃CHO", "HCHO", "CH₃COCH₃", "C₂H₅OH"], answer: 1, reason: "Formaldehyde is HCHO." },
+                    { q: "Which gas is in Mars’ atmosphere?", options: ["O₂", "N₂", "CO₂", "H₂"], answer: 2, reason: "CO₂ dominates Mars’ atmosphere." },
+                    { q: "What is the SI unit of power?", options: ["Joule", "Watt", "Newton", "Pascal"], answer: 1, reason: "Watt is the SI unit of power." },
+                    { q: "What bond type is in HCl?", options: ["Ionic", "Covalent", "Metallic", "Hydrogen"], answer: 1, reason: "HCl has a polar covalent bond." },
+                    { q: "Which element has the symbol Cl?", options: ["Chlorine", "Calcium", "Chromium", "Cobalt"], answer: 0, reason: "Cl is the symbol for chlorine." },
+                    { q: "What is the pH of 0.001 M HCl?", options: ["1", "2", "3", "7"], answer: 2, reason: "pH = -log(0.001) = 3." },
+                    { q: "Which gas is in dry ice?", options: ["O₂", "N₂", "CO₂", "H₂"], answer: 2, reason: "Dry ice is solid CO₂." },
+                    { q: "What is the valency of magnesium?", options: ["1", "2", "3", "4"], answer: 1, reason: "Magnesium has a valency of 2." },
+                    { q: "Which element is a noble gas?", options: ["Krypton", "Potassium", "Phosphorus", "Platinum"], answer: 0, reason: "Krypton is in Group 18." },
+                    { q: "What is the formula of potassium chloride?", options: ["KCl", "KOH", "K₂CO₃", "KNO₃"], answer: 0, reason: "Potassium chloride is KCl." },
+                    { q: "What type of oxide is MgO?", options: ["Acidic", "Basic", "Neutral", "Amphoteric"], answer: 1, reason: "MgO forms Mg(OH)₂ with water." },
+                    { q: "What is the atomic mass of phosphorus (approx.)?", options: ["29 u", "31 u", "33 u", "35 u"], answer: 1, reason: "Phosphorus’s atomic mass is about 31 u." },
+                    { q: "Which base is in baking soda?", options: ["NaOH", "NaHCO₃", "Ca(OH)₂", "NH₃"], answer: 1, reason: "Sodium bicarbonate is in baking soda." },
+                    { q: "What gas is produced in neutralization?", options: ["H₂", "O₂", "CO₂", "None"], answer: 3, reason: "Neutralization typically produces water and a salt, no gas." }
+                ],
+                11: [
+                    { q: "What type of hybridization occurs in CH₄?", options: ["sp", "sp²", "sp³", "dsp³"], answer: 2, reason: "CH₄ has sp³ hybridization due to four sigma bonds." },
+                    { q: "What is the bond angle in a water molecule?", options: ["90°", "104.5°", "109.5°", "120°"], answer: 1, reason: "H₂O has a bond angle of 104.5° due to lone pair repulsion." },
+                    { q: "Which molecule exhibits resonance?", options: ["CH₄", "O₃", "H₂O", "NH₃"], answer: 1, reason: "Ozone (O₃) has delocalized electrons, showing resonance." },
+                    { q: "What is the shape of CO₂?", options: ["Bent", "Linear", "Trigonal planar", "Tetrahedral"], answer: 1, reason: "CO₂ is linear due to sp hybridization of carbon." },
+                    { q: "What gas law is PV = nRT?", options: ["Boyle’s Law", "Charles’s Law", "Ideal Gas Law", "Dalton’s Law"], answer: 2, reason: "PV = nRT is the Ideal Gas Law." },
+                    { q: "What is the oxidation state of Cl in HClO₄?", options: ["+5", "+7", "+3", "+1"], answer: 1, reason: "In HClO₄, Cl has an oxidation state of +7." },
+                    { q: "Which compound is a Lewis acid?", options: ["NH₃", "H₂O", "BF₃", "OH⁻"], answer: 2, reason: "BF₃ accepts an electron pair, making it a Lewis acid." },
+                    { q: "What is the molar mass of NaOH?", options: ["23 g/mol", "40 g/mol", "58 g/mol", "32 g/mol"], answer: 1, reason: "NaOH: 23 + 16 + 1 = 40 g/mol." },
+                    { q: "What type of reaction is H₂ + Cl₂ → 2HCl?", options: ["Combination", "Decomposition", "Displacement", "Neutralization"], answer: 0, reason: "Two elements combine to form a compound." },
+                    { q: "What is the conjugate base of H₂SO₄?", options: ["SO₄²⁻", "HSO₄⁻", "H₃O⁺", "OH⁻"], answer: 1, reason: "H₂SO₄ loses one H⁺ to form HSO₄⁻." },
+                    { q: "Which element has the highest electronegativity?", options: ["Oxygen", "Fluorine", "Nitrogen", "Chlorine"], answer: 1, reason: "Fluorine has the highest electronegativity (4.0)." },
+                    { q: "What is the pH of 0.01 M HCl?", options: ["1", "2", "7", "12"], answer: 1, reason: "HCl is a strong acid; pH = -log(0.01) = 2." },
+                    { q: "What is Avogadro’s number?", options: ["6.022×10²³", "3.14×10⁸", "9.8", "1.6×10⁻¹⁹"], answer: 0, reason: "Avogadro’s number is 6.022×10²³ particles per mole." },
+                    { q: "Which bond is strongest?", options: ["Single", "Double", "Triple", "Hydrogen"], answer: 2, reason: "Triple bonds have the highest bond energy." },
+                    { q: "What is the shape of NH₃?", options: ["Linear", "Trigonal planar", "Trigonal pyramidal", "Tetrahedral"], answer: 2, reason: "NH₃ is trigonal pyramidal due to a lone pair." }
+                ],
+                12: [
+                    { q: "What is the IUPAC name of CH₃CH₂OH?", options: ["Ethene", "Ethanal", "Ethanol", "Ethanoic acid"], answer: 2, reason: "CH₃CH₂OH is named ethanol." },
+                    { q: "What is the hybridization of carbon in C₂H₂?", options: ["sp³", "sp²", "sp", "dsp³"], answer: 2, reason: "C₂H₂ has sp hybridization due to a triple bond." },
+                    { q: "Which reaction type is CH₄ + 2O₂ → CO₂ + 2H₂O?", options: ["Combination", "Combustion", "Displacement", "Decomposition"], answer: 1, reason: "This is a combustion reaction producing CO₂ and H₂O." },
+                    { q: "What is the equilibrium constant expression for 2A + B ⇌ C?", options: ["K = [C]/[A][B]", "K = [A]²[B]/[C]", "K = [C]/[A]²[B]", "K = [A][B]/[C]"], answer: 2, reason: "K = [C]/[A]²[B] matches the stoichiometry." },
+                    { q: "What is the oxidation state of Fe in Fe₂O₃?", options: ["+2", "+3", "+4", "+6"], answer: 1, reason: "Fe in Fe₂O₃ has an oxidation state of +3." },
+                    { q: "Which compound is aromatic?", options: ["Cyclohexane", "Benzene", "Ethene", "Butane"], answer: 1, reason: "Benzene follows Hückel’s rule with 6 π electrons." },
+                    { q: "What is the rate law for a reaction dependent on [A]²?", options: ["Rate = k[A]", "Rate = k[A]²", "Rate = k/[A]", "Rate = k[A][B]"], answer: 1, reason: "Rate = k[A]² indicates second-order dependence on [A]." },
+                    { q: "What is the shape of XeF₄?", options: ["Tetrahedral", "Square planar", "Trigonal bipyramidal", "Linear"], answer: 1, reason: "XeF₄ is square planar due to sp³d² hybridization." },
+                    { q: "What is ΔH for an exothermic reaction?", options: ["Positive", "Negative", "Zero", "Variable"], answer: 1, reason: "Exothermic reactions release heat; ΔH is negative." },
+                    { q: "Which catalyst is used in the Haber process?", options: ["Platinum", "Iron", "Nickel", "Copper"], answer: 1, reason: "Iron catalyzes ammonia synthesis in the Haber process." },
+                    { q: "What is the functional group in aldehydes?", options: ["-OH", "-COOH", "-CHO", "-C=O"], answer: 2, reason: "Aldehydes have the -CHO group." },
+                    { q: "What is the pOH of a solution with pH 3?", options: ["7", "11", "3", "14"], answer: 1, reason: "pH + pOH = 14; pOH = 14 - 3 = 11." },
+                    { q: "Which gas deviates most from ideal behavior?", options: ["He", "H₂", "NH₃", "O₂"], answer: 2, reason: "NH₃ has strong hydrogen bonding, causing deviation." },
+                    { q: "What is the bond order of N₂?", options: ["1", "2", "3", "4"], answer: 2, reason: "N₂ has a triple bond, giving a bond order of 3." },
+                    { q: "What is the conjugate acid of NH₃?", options: ["NH₂⁻", "NH₄⁺", "H⁺", "N₂"], answer: 1, reason: "NH₃ gains H⁺ to form NH₄⁺." }
+                ],
+                13: [
+                    { q: "What is the molar mass of H₂SO₄?", options: ["98 g/mol", "64 g/mol", "80 g/mol", "112 g/mol"], answer: 0, reason: "H₂SO₄: 2×1 + 32 + 4×16 = 98 g/mol." },
+                    { q: "What gas law relates volume and temperature?", options: ["Boyle’s Law", "Charles’s Law", "Gay-Lussac’s Law", "Avogadro’s Law"], answer: 1, reason: "Charles’s Law states V ∝ T." },
+                    { q: "What is the oxidation state of S in SO₂?", options: ["+2", "+4", "+6", "+8"], answer: 1, reason: "S in SO₂ has an oxidation state of +4." },
+                    { q: "Which compound is a strong electrolyte?", options: ["Sugar", "Ethanol", "NaCl", "Acetic acid"], answer: 2, reason: "NaCl fully dissociates in water." },
+                    { q: "What is the shape of BF₃?", options: ["Linear", "Trigonal planar", "Tetrahedral", "Bent"], answer: 1, reason: "BF₃ is trigonal planar due to sp² hybridization." },
+                    { q: "What is the pH of 0.001 M NaOH?", options: ["3", "7", "11", "13"], answer: 2, reason: "pOH = -log(0.001) = 3; pH = 14 - 3 = 11." },
+                    { q: "Which gas is produced in the electrolysis of brine?", options: ["H₂", "O₂", "Cl₂", "N₂"], answer: 2, reason: "Chlorine gas is produced at the anode." },
+                    { q: "What is the hybridization of N in NH₃?", options: ["sp", "sp²", "sp³", "dsp³"], answer: 2, reason: "N in NH₃ is sp³ hybridized." },
+                    { q: "What type of reaction is 2H₂O → 2H₂ + O₂?", options: ["Combination", "Decomposition", "Displacement", "Combustion"], answer: 1, reason: "A compound breaks into elements." },
+                    { q: "What is the conjugate base of HCO₃⁻?", options: ["H₂CO₃", "CO₃²⁻", "OH⁻", "HCO₂⁻"], answer: 1, reason: "HCO₃⁻ loses H⁺ to form CO₃²⁻." },
+                    { q: "Which element has the lowest electronegativity?", options: ["Francium", "Fluorine", "Oxygen", "Chlorine"], answer: 0, reason: "Francium has the lowest electronegativity." },
+                    { q: "What is the molar mass of CO₂?", options: ["28 g/mol", "44 g/mol", "32 g/mol", "16 g/mol"], answer: 1, reason: "CO₂: 12 + 16×2 = 44 g/mol." },
+                    { q: "Which bond is in H₂?", options: ["Single", "Double", "Triple", "Ionic"], answer: 0, reason: "H₂ has a single covalent bond." },
+                    { q: "What is the shape of PCl₅?", options: ["Tetrahedral", "Trigonal bipyramidal", "Square planar", "Linear"], answer: 1, reason: "PCl₅ is trigonal bipyramidal due to sp³d hybridization." },
+                    { q: "What gas is used in the Haber process?", options: ["N₂", "O₂", "CO₂", "He"], answer: 0, reason: "Nitrogen reacts with H₂ to form ammonia." }
+                ],
+                14: [
+                    { q: "What is the molar mass of NH₃?", options: ["17 g/mol", "28 g/mol", "34 g/mol", "14 g/mol"], answer: 0, reason: "NH₃: 14 + 3×1 = 17 g/mol." },
+                    { q: "What gas law relates pressure and temperature?", options: ["Boyle’s Law", "Charles’s Law", "Gay-Lussac’s Law", "Avogadro’s Law"], answer: 2, reason: "Gay-Lussac’s Law states P ∝ T." },
+                    { q: "What is the oxidation state of Mn in KMnO₄?", options: ["+5", "+6", "+7", "+8"], answer: 2, reason: "Mn in KMnO₄ has an oxidation state of +7." },
+                    { q: "Which compound is a weak electrolyte?", options: ["NaCl", "HCl", "CH₃COOH", "KOH"], answer: 2, reason: "Acetic acid partially dissociates in water." },
+                    { q: "What is the shape of SF₆?", options: ["Tetrahedral", "Trigonal bipyramidal", "Octahedral", "Square planar"], answer: 2, reason: "SF₆ is octahedral due to sp³d² hybridization." },
+                    { q: "What is the pH of 0.1 M CH₃COOH (Ka = 1.8×10⁻⁵)?", options: ["~2.87", "7", "11", "14"], answer: 0, reason: "pH ≈ 2.87 using Ka and [HA] = 0.1 M." },
+                    { q: "Which gas is produced in the Contact process?", options: ["SO₂", "O₂", "SO₃", "H₂"], answer: 2, reason: "SO₃ is produced to make sulfuric acid." },
+                    { q: "What is the hybridization of C in CH₃OH?", options: ["sp", "sp²", "sp³", "dsp³"], answer: 2, reason: "C in CH₃OH is sp³ hybridized." },
+                    { q: "What type of reaction is Fe + CuSO₄ → FeSO₄ + Cu?", options: ["Combination", "Decomposition", "Displacement", "Neutralization"], answer: 2, reason: "Fe displaces Cu in a single displacement reaction." },
+                    { q: "What is the conjugate acid of OH⁻?", options: ["H₂O", "H₃O⁺", "O²⁻", "H⁺"], answer: 0, reason: "OH⁻ gains H⁺ to form H₂O." },
+                    { q: "Which element has the highest ionization energy?", options: ["He", "Ne", "F", "O"], answer: 0, reason: "Helium has the highest ionization energy." },
+                    { q: "What is the molar mass of HNO₃?", options: ["47 g/mol", "63 g/mol", "79 g/mol", "31 g/mol"], answer: 1, reason: "HNO₃: 1 + 14 + 3×16 = 63 g/mol." },
+                    { q: "Which bond is in O₂?", options: ["Single", "Double", "Triple", "Ionic"], answer: 1, reason: "O₂ has a double covalent bond." },
+                    { q: "What is the shape of ClF₃?", options: ["Linear", "Trigonal planar", "T-shaped", "Tetrahedral"], answer: 2, reason: "ClF₃ is T-shaped due to sp³d hybridization." },
+                    { q: "What gas is used in the Ostwald process?", options: ["N₂", "O₂", "NH₃", "CO₂"], answer: 2, reason: "Ammonia is oxidized to produce nitric acid." }
+                ],
+                15: [
+                    { q: "What is the molar mass of CaCO₃?", options: ["100 g/mol", "84 g/mol", "116 g/mol", "68 g/mol"], answer: 0, reason: "CaCO₃: 40 + 12 + 3×16 = 100 g/mol." },
+                    { q: "What gas law relates volume and moles?", options: ["Boyle’s Law", "Charles’s Law", "Avogadro’s Law", "Gay-Lussac’s Law"], answer: 2, reason: "Avogadro’s Law states V ∝ n." },
+                    { q: "What is the oxidation state of Cr in Cr₂O₇²⁻?", options: ["+3", "+4", "+6", "+7"], answer: 2, reason: "Cr in Cr₂O₇²⁻ has an oxidation state of +6." },
+                    { q: "Which compound is a strong base?", options: ["NH₃", "NaOH", "CH₃COOH", "H₂O"], answer: 1, reason: "NaOH fully dissociates in water." },
+                    { q: "What is the shape of XeF₂?", options: ["Linear", "Bent", "Trigonal planar", "Tetrahedral"], answer: 0, reason: "XeF₂ is linear due to sp³d hybridization." },
+                    { q: "What is the pH of 0.01 M HNO₃?", options: ["1", "2", "7", "12"], answer: 1, reason: "HNO₃ is a strong acid; pH = -log(0.01) = 2." },
+                    { q: "Which gas is produced in the Haber process?", options: ["N₂", "H₂", "NH₃", "O₂"], answer: 2, reason: "NH₃ is the product of the Haber process." },
+                    { q: "What is the hybridization of S in SO₂?", options: ["sp", "sp²", "sp³", "dsp³"], answer: 1, reason: "S in SO₂ is sp² hybridized." },
+                    { q: "What type of reaction is CaCO₃ → CaO + CO₂?", options: ["Combination", "Decomposition", "Displacement", "Combustion"], answer: 1, reason: "A compound breaks into simpler substances." },
+                    { q: "What is the conjugate base of HPO₄²⁻?", options: ["H₂PO₄⁻", "PO₄³⁻", "H₃PO₄", "OH⁻"], answer: 1, reason: "HPO₄²⁻ loses H⁺ to form PO₄³⁻." },
+                    { q: "Which element has the lowest melting point?", options: ["Hg", "Fe", "Cu", "Au"], answer: 0, reason: "Mercury is liquid at room temperature." },
+                    { q: "What is the molar mass of CH₄?", options: ["12 g/mol", "16 g/mol", "20 g/mol", "28 g/mol"], answer: 1, reason: "CH₄: 12 + 4×1 = 16 g/mol." },
+                    { q: "Which bond is in N₂?", options: ["Single", "Double", "Triple", "Ionic"], answer: 2, reason: "N₂ has a triple covalent bond." },
+                    { q: "What is the shape of H₃O⁺?", options: ["Linear", "Bent", "Trigonal pyramidal", "Tetrahedral"], answer: 2, reason: "H₃O⁺ is trigonal pyramidal due to sp³ hybridization." },
+                    { q: "What gas is used in the Solvay process?", options: ["CO₂", "O₂", "N₂", "H₂"], answer: 0, reason: "CO₂ reacts to form sodium bicarbonate." }
+                ]
+            }
+        };
+    
+        function startTimer() {
+            clearInterval(timerInterval);
+            if (selectedLevel >= 1 && selectedLevel <= 5) timeLeft = 120;
+            else if (selectedLevel >= 6 && selectedLevel <= 10) timeLeft = 90;
+            else if (selectedLevel >= 11 && selectedLevel <= 15) timeLeft = 60;
+    
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                document.getElementById('timer').textContent = 
+                    `Time Left: ${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    showResult();
+                }
+            }, 1000);
+        }
+    
+        function updateLevelButtons() {
+            const totalPoints = parseInt(localStorage.getItem(`${subject}Score`) || '0');
+            const levelButtons = document.querySelectorAll('.level-button');
+            levelButtons.forEach((button, index) => {
+                const level = index + 1;
+                if (level <= 2) return;
+                if ((level >= 3 && level <= 5 && totalPoints < 80) ||
+                    (level >= 6 && level <= 10 && totalPoints < 120) ||
+                    (level >= 11 && level <= 15 && totalPoints < 160)) {
+                    button.classList.add('locked');
+                    button.disabled = true;
+                    button.title = `Requires ${level <= 5 ? 80 : level <= 10 ? 120 : 160} points to unlock (Current: ${totalPoints})`;
+                } else {
+                    button.classList.remove('locked');
+                    button.disabled = false;
+                    button.title = '';
+                }
+            });
+        }
+    
+        function shuffleQuestions() {
+            shuffledQuestions = [...levels[subject][selectedLevel]].sort(() => Math.random() - 0.5);
+            score = 0;
+            currentQuestionIndex = 0;
+            answers = new Array(15).fill(null);
+        }
+    
+        function loadQuestion() {
+            if (currentQuestionIndex >= shuffledQuestions.length || timeLeft <= 0) {
+                showResult();
+                return;
+            }
+    
+            const questionData = shuffledQuestions[currentQuestionIndex];
+            document.getElementById('question').textContent = 
+                `Level ${selectedLevel} - Question ${currentQuestionIndex + 1}/${shuffledQuestions.length}: ${questionData.q}`;
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = '';
+    
+            questionData.options.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.classList.add('option');
+                optionElement.textContent = option;
+                if (answers[currentQuestionIndex] !== null) {
+                    if (index === questionData.answer) {
+                        optionElement.classList.add('correct');
+                    } else if (index === answers[currentQuestionIndex]) {
+                        optionElement.classList.add('incorrect');
+                    }
+                    optionElement.classList.add('selected');
+                } else {
+                    optionElement.onclick = () => selectAnswer(index, optionElement);
+                }
+                optionsContainer.appendChild(optionElement);
+            });
+    
+            const reasonElement = document.getElementById('reason');
+            if (answers[currentQuestionIndex] !== null) {
+                reasonElement.textContent = questionData.reason;
+                reasonElement.classList.remove('correct', 'incorrect');
+                reasonElement.classList.add(answers[currentQuestionIndex] === questionData.answer ? 'correct' : 'incorrect');
+            } else {
+                reasonElement.style.display = 'none';
+            }
+    
+            document.getElementById('quiz-container').style.display = 'block';
+            document.getElementById('result-container').style.display = 'none';
+    
+            document.getElementById('prev-button').disabled = currentQuestionIndex === 0;
+            document.getElementById('next-button').disabled = currentQuestionIndex === shuffledQuestions.length - 1 && answers[currentQuestionIndex] !== null;
+            document.getElementById('speech-button').disabled = !recognitionAvailable && answers[currentQuestionIndex] !== null;
+    
+            if (answers[currentQuestionIndex] !== null) {
+                document.getElementById('next-button').disabled = false;
+            }
+        }
+    
+        function selectAnswer(selectedIndex, selectedElement) {
+            const correctIndex = shuffledQuestions[currentQuestionIndex].answer;
+            answers[currentQuestionIndex] = selectedIndex;
+    
+            document.querySelectorAll('.option').forEach(opt => opt.classList.add('selected'));
+            if (selectedIndex === correctIndex) {
+                score += 10;
+            }
+            selectedElement.classList.add(selectedIndex === correctIndex ? 'correct' : 'incorrect');
+            document.querySelectorAll('.option')[correctIndex].classList.add('correct');
+    
+            const reasonElement = document.getElementById('reason');
+            reasonElement.textContent = shuffledQuestions[currentQuestionIndex].reason;
+            reasonElement.classList.remove('correct', 'incorrect');
+            reasonElement.classList.add(selectedIndex === correctIndex ? 'correct' : 'incorrect');
+            reasonElement.style.display = 'block';
+    
+            document.getElementById('next-button').disabled = false;
+            
+            // Announce result via speech
+            const resultText = selectedIndex === correctIndex ? 'Correct!' : 'Incorrect. The correct answer is ' + shuffledQuestions[currentQuestionIndex].options[correctIndex];
+            const resultUtterance = new SpeechSynthesisUtterance(resultText);
+            window.speechSynthesis.speak(resultUtterance);
+        }
+    
+        function nextQuestion() {
+            if (currentQuestionIndex < shuffledQuestions.length - 1) {
+                currentQuestionIndex++;
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        }
+    
+        function prevQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                loadQuestion();
+            }
+        }
+    
+        function showResult() {
+            clearInterval(timerInterval);
+            document.getElementById('quiz-container').style.display = 'none';
+            document.getElementById('result-container').style.display = 'block';
+            document.getElementById('final-score').textContent = `${score}`;
+    
+            const subjectScoreKey = `${subject}Score`;
+            const currentScore = parseInt(localStorage.getItem(subjectScoreKey) || '0');
+            localStorage.setItem(subjectScoreKey, currentScore + score);
+    
+            const quizResults = shuffledQuestions.map((q, i) => ({
+                question: q.q,
+                selectedAnswer: answers[i] !== null ? q.options[answers[i]] : "Not answered",
+                correctAnswer: q.options[q.answer]
+            }));
+            quizResults.timestamp = Date.now();
+            localStorage.setItem(`${subject}Results`, JSON.stringify(quizResults));
+    
+            updateLevelButtons();
+    
+            // Announce final score via speech
+            const finalScoreUtterance = new SpeechSynthesisUtterance(`Quiz completed! Your total score is ${score}.`);
+            window.speechSynthesis.speak(finalScoreUtterance);
+        }
+    
+        function startQuiz(level) {
+            const totalPoints = parseInt(localStorage.getItem(`${subject}Score`) || '0');
+            if ((level >= 3 && level <= 5 && totalPoints < 80) ||
+                (level >= 6 && level <= 10 && totalPoints < 120) ||
+                (level >= 11 && level <= 15 && totalPoints < 160)) {
+                alert(`You need ${level <= 5 ? 80 : level <= 10 ? 120 : 160} points to unlock Level ${level}. Current points: ${totalPoints}`);
+                return;
+            }
+            selectedLevel = level;
+            document.getElementById('level-selector').style.display = 'none';
+            shuffleQuestions();
+            startTimer();
+            loadQuestion();
+        }
+    
+        function restartQuiz() {
+            document.getElementById('result-container').style.display = 'none';
+            document.getElementById('level-selector').style.display = 'block';
+            updateLevelButtons();
+        }
+    
+        function goBack() {
+            clearInterval(timerInterval);
+            window.location.href = 'index.html';
+        }
+    
+        function speakQuestion() {
+            if (!recognitionAvailable) {
+                const notSupportedUtterance = new SpeechSynthesisUtterance('Speech recognition is not supported in this browser. Please select your answer manually.');
+                window.speechSynthesis.speak(notSupportedUtterance);
+                return;
+            }
+    
+            const questionData = shuffledQuestions[currentQuestionIndex];
+            const questionText = document.getElementById('question').textContent;
+            const options = questionData.options.map((opt, index) => `${index + 1}. ${opt}`).join(', ');
+            const speechText = `${questionText}. Here are the options: ${options}. Please say the number of your answer between 1 and 4 after the beep.`;
+    
+            const utterance = new SpeechSynthesisUtterance(speechText);
+            utterance.lang = 'en-US';
+            utterance.volume = 1.0;
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+    
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+    
+            const speechButton = document.getElementById('speech-button');
+            speechButton.disabled = true;
+            speechButton.textContent = 'Speaking...';
+    
+            utterance.onend = () => {
+                speechButton.textContent = 'Listening...';
+                if (answers[currentQuestionIndex] === null) {
+                    startVoiceRecognition();
+                } else {
+                    speechButton.disabled = false;
+                    speechButton.textContent = 'Speech';
+                }
+            };
+        }
+    
+        function startVoiceRecognition() {
+            if (!recognitionAvailable) return;
+    
+            const speechButton = document.getElementById('speech-button');
+            speechButton.textContent = 'Listening...';
+    
+            recognition.start();
+    
+            recognition.onstart = () => {
+                console.log('Voice recognition started. Say the number of your answer (1-4).');
+                const beep = new SpeechSynthesisUtterance('Beep');
+                window.speechSynthesis.speak(beep);
+            };
+    
+            recognition.onresult = (event) => {
+                const spokenText = event.results[0][0].transcript.trim().toLowerCase();
+                console.log('Heard:', spokenText);
+                let selectedIndex;
+    
+                // Convert spoken numbers (words or digits) to index
+                if (/one|1/.test(spokenText)) selectedIndex = 0;
+                else if (/two|2/.test(spokenText)) selectedIndex = 1;
+                else if (/three|3/.test(spokenText)) selectedIndex = 2;
+                else if (/four|4/.test(spokenText)) selectedIndex = 3;
+                else selectedIndex = -1;
+    
+                if (selectedIndex >= 0 && selectedIndex < 4) {
+                    const options = document.querySelectorAll('.option');
+                    if (!options[selectedIndex].classList.contains('selected')) {
+                        selectAnswer(selectedIndex, options[selectedIndex]);
+                        speechButton.disabled = false;
+                        speechButton.textContent = 'Speech';
+                    }
+                } else {
+                    const errorUtterance = new SpeechSynthesisUtterance('Invalid option. Please say a number between 1 and 4. Try again.');
+                    window.speechSynthesis.speak(errorUtterance);
+                    errorUtterance.onend = () => {
+                        if (answers[currentQuestionIndex] === null) {
+                            startVoiceRecognition(); // Retry
+                        } else {
+                            speechButton.disabled = false;
+                            speechButton.textContent = 'Speech';
+                        }
+                    };
+                }
+            };
+    
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                let errorMessage = 'Sorry, there was an error.';
+                if (event.error === 'no-speech') errorMessage = 'No speech detected. Please try again.';
+                else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') errorMessage = 'Microphone access denied. Please allow microphone permissions and try again.';
+    
+                const errorUtterance = new SpeechSynthesisUtterance(errorMessage);
+                window.speechSynthesis.speak(errorUtterance);
+                errorUtterance.onend = () => {
+                    speechButton.disabled = false;
+                    speechButton.textContent = 'Speech';
+                    if (event.error !== 'not-allowed' && event.error !== 'service-not-allowed' && answers[currentQuestionIndex] === null) {
+                        setTimeout(startVoiceRecognition, 1000); // Retry after a delay unless permissions issue
+                    }
+                };
+            };
+    
+            recognition.onend = () => {
+                if (speechButton.textContent === 'Listening...' && answers[currentQuestionIndex] === null) {
+                    const timeoutUtterance = new SpeechSynthesisUtterance('Recognition timed out. Trying again.');
+                    window.speechSynthesis.speak(timeoutUtterance);
+                    timeoutUtterance.onend = () => {
+                        startVoiceRecognition();
+                    };
+                }
+            };
+        }
+    
+        // Initialize level buttons on page load
+        updateLevelButtons();
+    </script>
+    </body>
+    </html>
+    

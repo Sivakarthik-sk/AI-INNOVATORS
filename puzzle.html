@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puzzle Game - Brain Boosters</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        body { margin: 0; font-family: 'Arial', sans-serif; background: #f4f4f4; color: #333; }
+        .header { background: #004080; color: white; padding: 1rem; text-align: center; }
+        .header h1 { margin: 0; font-size: 1.5rem; }
+        .main-content { display: flex; min-height: calc(100vh - 60px); }
+        .sidebar { width: 250px; background: #e0e0e0; padding: 1rem; border-right: 1px solid #ccc; }
+        .sidebar h2 { color: #004080; margin-top: 0; }
+        .level-list { list-style: none; padding: 0; }
+        .level-item { padding: 0.5rem; margin: 0.5rem 0; border: 1px solid #ccc; cursor: pointer; transition: all 0.3s ease; }
+        .level-item.unlocked { background: #ffffff; color: #333; }
+        .level-item.locked { background: #ffcccc; color: #666; cursor: not-allowed; }
+        .level-item.completed { background: #d4edda; color: #155724; }
+        .level-item:hover:not(.locked) { background: #f0f0f0; }
+        .unlock-button { background: #28a745; color: white; border: none; padding: 0.3rem 0.6rem; margin-left: 0.5rem; border-radius: 3px; cursor: pointer; }
+        .unlock-button:hover { background: #218838; }
+        .content { flex: 1; padding: 2rem; }
+        .puzzle-container { background: #fff; border: 1px solid #ccc; padding: 2rem; border-radius: 5px; text-align: center; display: none; }
+        .puzzle-grid { display: grid; gap: 0.5rem; max-width: 400px; margin: 2rem auto; }
+        .puzzle-piece { background: #e0e0e0; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; border: 1px solid #ccc; transition: all 0.3s ease; }
+        .puzzle-piece:hover { background: #d0d0d0; }
+        .instructions { font-size: 0.9rem; color: #555; margin: 1rem 0; }
+        .back-button { background: #004080; color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; margin: 0.5rem; }
+        .back-button:hover { background: #0056b3; }
+        @media (max-width: 768px) { .main-content { flex-direction: column; } .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #ccc; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Puzzle Game - Brain Boosters</h1>
+    </div>
+    <div class="main-content">
+        <div class="sidebar">
+            <h2>Levels</h2>
+            <p>Points: <span id="pointsDisplay">0</span></p>
+            <ul class="level-list" id="levelList"></ul>
+        </div>
+        <div class="content">
+            <button class="back-button" onclick="goBack()">Back to Home</button>
+            <div class="puzzle-container" id="puzzleContainer">
+                <h2>Level <span id="levelDisplay">1</span>: <span id="puzzleTitle"></span></h2>
+                <p>Points: <span id="gamePointsDisplay">0</span></p>
+                <p class="instructions" id="instructions"></p>
+                <div class="puzzle-grid" id="puzzleGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const levels = [
+            { size: 3, type: 'logic', points: 20, unlock: 0, desc: 'Solve the logic grid' },
+            { size: 3, type: 'sudoku', points: 25, unlock: 20, desc: 'Complete the mini sudoku' },
+            { size: 3, type: 'sequence', points: 30, unlock: 45, desc: 'Find the next sequence' },
+            { size: 4, type: 'logic', points: 40, unlock: 75, desc: 'Advanced logic grid' },
+            { size: 4, type: 'sudoku', points: 45, unlock: 115, desc: 'Larger sudoku puzzle' },
+            { size: 4, type: 'sequence', points: 50, unlock: 160, desc: 'Complex sequence solver' },
+            { size: 5, type: 'logic', points: 55, unlock: 210, desc: 'Challenging logic grid' },
+            { size: 5, type: 'sudoku', points: 70, unlock: 265, desc: 'Tough sudoku challenge' },
+            { size: 5, type: 'sequence', points: 75, unlock: 335, desc: 'Tricky sequence puzzle' },
+            { size: 5, type: 'logic', points: 80, unlock: 410, desc: 'Expert logic grid' },
+            { size: 5, type: 'sudoku', points: 85, unlock: 490, desc: 'Master sudoku puzzle' },
+            { size: 5, type: 'sequence', points: 90, unlock: 575, desc: 'Advanced sequence solver' },
+            { size: 6, type: 'logic', points: 95, unlock: 665, desc: 'Ultimate logic challenge' },
+            { size: 6, type: 'sudoku', points: 100, unlock: 760, desc: 'Expert sudoku grid' },
+            { size: 6, type: 'sequence', points: 120, unlock: 860, desc: 'Master sequence puzzle' }
+        ];
+
+        let totalPoints = parseInt(localStorage.getItem('quizPoints') || '0');
+        let completedLevels = JSON.parse(localStorage.getItem('completedLevels') || '[]');
+        let unlockedLevels = JSON.parse(localStorage.getItem('unlockedLevels') || '[0]'); // Level 1 unlocked by default
+        let selectedLevel = null;
+        let gameState = [];
+        const levelList = document.getElementById('levelList');
+        const puzzleContainer = document.getElementById('puzzleContainer');
+        const puzzleGrid = document.getElementById('puzzleGrid');
+        const pointsDisplay = document.getElementById('pointsDisplay');
+        const gamePointsDisplay = document.getElementById('gamePointsDisplay');
+        const levelDisplay = document.getElementById('levelDisplay');
+        const puzzleTitle = document.getElementById('puzzleTitle');
+        const instructions = document.getElementById('instructions');
+
+        function initializeLevelSelection() {
+            pointsDisplay.textContent = totalPoints;
+            levelList.innerHTML = '';
+            levels.forEach((level, index) => {
+                const li = document.createElement('li');
+                li.className = 'level-item';
+                li.innerHTML = `Level ${index + 1}: ${level.desc} (${level.points} pts)`;
+
+                if (completedLevels.includes(index)) {
+                    li.classList.add('completed');
+                    li.title = 'Completed';
+                    li.onclick = () => selectLevel(index);
+                } else if (unlockedLevels.includes(index)) {
+                    li.classList.add('unlocked');
+                    li.onclick = () => selectLevel(index);
+                } else {
+                    li.classList.add('locked');
+                    li.title = `Earn ${level.unlock} points to unlock`;
+                    if (totalPoints >= level.unlock) {
+                        const unlockButton = document.createElement('button');
+                        unlockButton.className = 'unlock-button';
+                        unlockButton.textContent = `Unlock (${level.unlock} pts)`;
+                        unlockButton.onclick = (e) => {
+                            e.stopPropagation();
+                            unlockLevel(index);
+                        };
+                        li.appendChild(unlockButton);
+                    }
+                }
+                levelList.appendChild(li);
+            });
+            console.log('Total Points:', totalPoints);
+            console.log('Unlocked Levels:', unlockedLevels);
+            console.log('Completed Levels:', completedLevels);
+        }
+
+        function unlockLevel(index) {
+            if (totalPoints >= levels[index].unlock) {
+                totalPoints -= levels[index].unlock;
+                if (!unlockedLevels.includes(index)) {
+                    unlockedLevels.push(index);
+                }
+                localStorage.setItem('quizPoints', totalPoints);
+                localStorage.setItem('unlockedLevels', JSON.stringify(unlockedLevels));
+                alert(`Level ${index + 1} unlocked! ${levels[index].unlock} points redeemed.`);
+                initializeLevelSelection();
+            } else {
+                alert(`Not enough points! You need ${levels[index].unlock} points to unlock Level ${index + 1}.`);
+            }
+        }
+
+        function selectLevel(index) {
+            selectedLevel = index;
+            if (!unlockedLevels.includes(index) && !completedLevels.includes(index)) {
+                alert(`Level ${selectedLevel + 1} is locked! Redeem it with points or complete previous levels.`);
+                return;
+            }
+            console.log(`Selected Level ${index + 1}`);
+            puzzleContainer.style.display = 'block';
+            initializePuzzle();
+        }
+
+        function initializePuzzle() {
+            const size = levels[selectedLevel].size;
+            puzzleGrid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            gameState = generatePuzzle(levels[selectedLevel]);
+            createPuzzle();
+            levelDisplay.textContent = selectedLevel + 1;
+            puzzleTitle.textContent = levels[selectedLevel].desc;
+            gamePointsDisplay.textContent = totalPoints;
+            setInstructions();
+        }
+
+        function setInstructions() {
+            switch (levels[selectedLevel].type) {
+                case 'logic':
+                    instructions.textContent = 'Click tiles to cycle between X, O, and blank. Fill the grid so each row and column has an equal number of Xs and Os.';
+                    break;
+                case 'sudoku':
+                    instructions.textContent = 'Click tiles to cycle numbers (1 to size). Fill the grid so each row, column, and subgrid (if applicable) has unique numbers.';
+                    break;
+                case 'sequence':
+                    instructions.textContent = 'Click tiles to cycle numbers. Solve the sequence based on the pattern (e.g., +2, x2, etc.).';
+                    break;
+            }
+        }
+
+        function generatePuzzle(level) {
+            const size = level.size;
+            const totalTiles = size * size;
+            switch (level.type) {
+                case 'logic': 
+                    return Array(totalTiles).fill('');
+                case 'sudoku': 
+                    return generateSudoku(size);
+                case 'sequence': 
+                    return generateSequence(size);
+            }
+        }
+
+        function generateSudoku(size) {
+            const grid = Array(size * size).fill('');
+            if (size === 3) {
+                grid[0] = '1'; grid[1] = '2'; grid[2] = '3';
+                grid[3] = '3'; grid[4] = ''; grid[5] = '1';
+                grid[6] = '2'; grid[7] = '3'; grid[8] = '';
+            } else if (size === 4) {
+                grid[0] = '1'; grid[1] = '2'; grid[2] = ''; grid[3] = '4';
+                grid[4] = '3'; grid[5] = ''; grid[6] = '1'; grid[7] = '2';
+                grid[8] = '2'; grid[9] = '1'; grid[10] = '4'; grid[11] = '';
+                grid[12] = '4'; grid[13] = '3'; grid[14] = '2'; grid[15] = '1';
+            } else {
+                return Array(size * size).fill('').map(() => Math.random() > 0.5 ? '' : String(Math.floor(Math.random() * size) + 1));
+            }
+            return grid;
+        }
+
+        function generateSequence(size) {
+            const base = [1, 3, 5, 7, 9, 11].slice(0, size * size - 1);
+            base.push('');
+            return base; // Example: Odd numbers sequence
+        }
+
+        function createPuzzle() {
+            puzzleGrid.innerHTML = '';
+            gameState.forEach((item, index) => {
+                const piece = document.createElement('div');
+                piece.className = 'puzzle-piece';
+                piece.textContent = item;
+                piece.dataset.value = item;
+                piece.onclick = () => puzzleClick(index);
+                puzzleGrid.appendChild(piece);
+            });
+        }
+
+        function puzzleClick(index) {
+            const piece = puzzleGrid.children[index];
+            if (levels[selectedLevel].type === 'logic') {
+                const states = ['', 'X', 'O'];
+                const currentIdx = states.indexOf(piece.dataset.value);
+                piece.dataset.value = states[(currentIdx + 1) % states.length];
+                piece.textContent = piece.dataset.value;
+            } else if (levels[selectedLevel].type === 'sudoku') {
+                const size = levels[selectedLevel].size;
+                const numbers = ['', ...Array(size).keys().map(i => String(i + 1))];
+                const currentIdx = numbers.indexOf(piece.dataset.value);
+                piece.dataset.value = numbers[(currentIdx + 1) % numbers.length];
+                piece.textContent = piece.dataset.value;
+            } else if (levels[selectedLevel].type === 'sequence') {
+                const current = piece.dataset.value === '' ? 0 : parseInt(piece.dataset.value);
+                piece.dataset.value = String((current + 1) % 10 || '');
+                piece.textContent = piece.dataset.value;
+            }
+            checkWin();
+        }
+
+        function checkWin() {
+            if (levels[selectedLevel].type === 'logic') {
+                if (checkLogicWin()) completeLevel();
+            } else if (levels[selectedLevel].type === 'sudoku') {
+                if (checkSudokuWin()) completeLevel();
+            } else if (levels[selectedLevel].type === 'sequence') {
+                if (checkSequenceWin()) completeLevel();
+            }
+        }
+
+        function checkLogicWin() {
+            const size = levels[selectedLevel].size;
+            const grid = Array.from(puzzleGrid.children).map(p => p.dataset.value);
+            for (let i = 0; i < size; i++) {
+                const row = grid.slice(i * size, (i + 1) * size);
+                const col = Array.from({ length: size }, (_, j) => grid[j * size + i]);
+                if (!isBalanced(row) || !isBalanced(col)) return false;
+            }
+            return true;
+        }
+
+        function isBalanced(arr) {
+            const xCount = arr.filter(x => x === 'X').length;
+            const oCount = arr.filter(x => x === 'O').length;
+            return xCount === oCount && xCount > 0;
+        }
+
+        function checkSudokuWin() {
+            const size = levels[selectedLevel].size;
+            const grid = Array.from(puzzleGrid.children).map(p => p.dataset.value);
+            for (let i = 0; i < size; i++) {
+                const row = grid.slice(i * size, (i + 1) * size);
+                const col = Array.from({ length: size }, (_, j) => grid[j * size + i]);
+                if (!isUnique(row) || !isUnique(col)) return false;
+            }
+            return true;
+        }
+
+        function isUnique(arr) {
+            const filled = arr.filter(x => x !== '');
+            return filled.length === new Set(filled).size && filled.length > 0;
+        }
+
+        function checkSequenceWin() {
+            const size = levels[selectedLevel].size;
+            const grid = Array.from(puzzleGrid.children).map(p => p.dataset.value === '' ? null : parseInt(p.dataset.value));
+            const sequence = grid.filter(x => x !== null);
+            if (sequence.length !== size * size - 1) return false;
+            for (let i = 1; i < sequence.length; i++) {
+                if (sequence[i] !== sequence[i - 1] + 2) return false; // Odd numbers sequence
+            }
+            return true;
+        }
+
+        function completeLevel() {
+            totalPoints += levels[selectedLevel].points;
+            if (!completedLevels.includes(selectedLevel)) {
+                completedLevels.push(selectedLevel);
+            }
+            localStorage.setItem('quizPoints', totalPoints);
+            localStorage.setItem('completedLevels', JSON.stringify(completedLevels));
+            alert(`Congratulations! Level ${selectedLevel + 1} completed! +${levels[selectedLevel].points} points`);
+            puzzleContainer.style.display = 'none';
+            initializeLevelSelection();
+        }
+
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+
+        initializeLevelSelection();
+    </script>
+</body>
+</html>

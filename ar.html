@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>oLabs: Offline 3D AR/VR Lab Simulations</title>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.min.js"></script>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --secondary: #3b82f6;
+            --dark: #111827;
+            --light: #f9fafb;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { overflow: hidden; background: var(--light); color: var(--dark); }
+        a-scene { width: 100vw; height: 100vh; display: none; }
+        .homepage { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background: linear-gradient(135deg, #dbeafe, #e0f2fe); 
+            display: flex; flex-direction: column; justify-content: center; 
+            align-items: center; z-index: 1000; transition: opacity 0.5s ease; }
+        .homepage.hidden { opacity: 0; pointer-events: none; }
+        .homepage h1 { font-size: clamp(2rem, 6vw, 3.5rem); margin-bottom: 1rem; 
+            background: linear-gradient(to right, var(--primary), var(--secondary)); 
+            -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .homepage p { font-size: clamp(1rem, 2.5vw, 1.25rem); margin-bottom: 2rem; 
+            color: #4b5563; text-align: center; max-width: 90%; }
+        .homepage button { padding: 0.8rem 2rem; font-size: clamp(1rem, 2vw, 1.25rem); 
+            margin: 0.5rem; cursor: pointer; background: var(--primary); color: white; 
+            border: none; border-radius: 0.5rem; box-shadow: var(--shadow); 
+            transition: transform 0.3s ease, background 0.3s ease; }
+        .homepage button:hover { transform: scale(1.05); background: var(--secondary); }
+        .dashboard { position: fixed; top: 1rem; left: 1rem; 
+            background: rgba(255, 255, 255, 0.95); padding: 1.5rem; 
+            border-radius: 0.5rem; box-shadow: var(--shadow); z-index: 2000; 
+            display: none; width: 300px; font-size: 0.95rem; }
+        .dashboard h3 { margin-bottom: 1rem; color: var(--primary); }
+        .dashboard select, .dashboard button { margin: 0.5rem 0; padding: 0.6rem; 
+            background: var(--primary); color: white; border: none; 
+            border-radius: 0.3rem; cursor: pointer; display: block; width: 100%; 
+            transition: background 0.3s ease; }
+        .dashboard select:hover, .dashboard button:hover { background: var(--secondary); }
+        @media (max-width: 768px) { 
+            .dashboard { width: 85%; left: 7.5%; top: 0.5rem; }
+            .homepage p { max-width: 95%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="homepage" id="homepage">
+        <h1>oLabs: Offline 3D Lab Simulations</h1>
+        <p>Learn science concepts through interactive AR (needs Hiro marker), VR (Meta Quest ready), or 3D experiments. Works offline!</p>
+        <button onclick="startAR()" aria-label="Start AR">Launch AR Lab</button>
+        <button onclick="startVR()" aria-label="Start VR">Launch VR Lab</button>
+        <button onclick="start3D()" aria-label="Start 3D">Launch 3D Lab</button>
+    </div>
+
+    <div class="dashboard" id="dashboard">
+        <h3>Lab Experiments</h3>
+        <p>Points: <span id="points">0</span></p>
+        <select id="experimentSelect" onchange="startExperiment(this.value)">
+            <option value="">Select an Experiment</option>
+            <option value="resistance">Class 10: Wire Resistance</option>
+            <option value="acidbase">Class 10: Acid + Base</option>
+            <option value="pendulum">Class 11: Pendulum Swing</option>
+            <option value="calorimetry">Class 11: Heat Measure</option>
+            <option value="titration">Class 12: Titration Test</option>
+            <option value="electrolytic">Class 12: Electric Cell</option>
+        </select>
+        <button onclick="resetExperiment()">Reset Experiment</button>
+        <button onclick="returnToHome()">Back to Home</button>
+    </div>
+
+    <a-scene
+        id="scene"
+        vr-mode-ui="enabled: true"
+        embedded
+        arjs="sourceType: webcam; debugUIEnabled: false;"
+        renderer="logarithmicDepthBuffer: true;"
+        webxr="optionalFeatures: hand-tracking"
+    >
+        <a-marker preset="hiro">
+            <a-entity id="experiment-entity-ar" position="0 0 0" scale="0.5 0.5 0.5" visible="false">
+                <a-text id="label-ar" value="" color="black" position="0 -0.5 0" scale="0.5 0.5 0.5" align="center"></a-text>
+            </a-entity>
+        </a-marker>
+
+        <a-entity id="experiment-entity-vr" position="0 1.5 -2" scale="0.5 0.5 0.5" visible="false">
+            <a-text id="label-vr" value="" color="black" position="0 -0.5 0" scale="0.5 0.5 0.5" align="center"></a-text>
+        </a-entity>
+
+        <!-- 3D Mode Entity with Interactive Elements -->
+        <a-entity id="experiment-entity-3d" position="0 1.5 -2" scale="0.5 0.5 0.5" visible="false">
+            <a-text id="label-3d" value="Interact with these 3D objects!" color="black" position="0 -0.5 0" scale="0.5 0.5 0.5" align="center"></a-text>
+            <!-- Interactive 3D Elements -->
+            <a-sphere position="-1 0 0" radius="0.3" color="#ff6666" class="interactable" data-name="Red Ball"></a-sphere>
+            <a-box position="1 0 0" width="0.4" height="0.4" depth="0.4" color="#66cc66" class="interactable" data-name="Green Cube"></a-box>
+            <a-cylinder position="0 0.5 0" height="0.6" radius="0.2" color="#6699ff" class="interactable" data-name="Blue Cylinder"></a-cylinder>
+        </a-entity>
+
+        <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="10" color="#d1d5db"></a-plane>
+        <a-light type="ambient" color="#666"></a-light>
+        <a-light type="point" intensity="1.2" position="2 3 2"></a-light>
+        <a-sky color="#e5e7eb"></a-sky>
+
+        <a-entity camera look-controls position="0 1.6 0"></a-entity>
+        <a-entity id="left-hand" hand-controls="hand: left" vive-controls="hand: left" oculus-touch-controls="hand: left"></a-entity>
+        <a-entity id="right-hand" hand-controls="hand: right" vive-controls="hand: right" oculus-touch-controls="hand: right"></a-entity>
+    </a-scene>
+
+    <script>
+        let points = 0;
+        let currentMode = null;
+        let activeExperiment = null;
+
+        function startAR() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert('AR needs a webcam. Check your device.');
+                return;
+            }
+            toggleScene('ar');
+        }
+
+        function startVR() {
+            if (!navigator.xr) {
+                alert('VR needs WebXR (try Meta Quest Browser).');
+                return;
+            }
+            toggleScene('vr');
+            document.getElementById('scene').enterVR().catch(err => {
+                console.error('VR failed:', err);
+                alert('VR mode failed. Check console.');
+            });
+        }
+
+        function start3D() {
+            toggleScene('3d');
+            const entity3D = document.getElementById('experiment-entity-3d');
+            entity3D.setAttribute('visible', 'true'); // Show 3D elements immediately
+        }
+
+        function toggleScene(mode) {
+            const homepage = document.getElementById('homepage');
+            const scene = document.getElementById('scene');
+            const dashboard = document.getElementById('dashboard');
+
+            homepage.classList.add('hidden');
+            scene.style.display = 'block';
+            dashboard.style.display = 'block';
+            currentMode = mode;
+            console.log(`Started ${mode.toUpperCase()} mode`);
+        }
+
+        function startExperiment(type) {
+            if (!type) return;
+            resetExperiment();
+            const modeEntity = {
+                'ar': 'experiment-entity-ar',
+                'vr': 'experiment-entity-vr',
+                '3d': 'experiment-entity-3d'
+            };
+            const entity = document.getElementById(modeEntity[currentMode]);
+            const label = document.getElementById(`label-${currentMode}`);
+            let description, pointsEarned, geometry, concept;
+
+            switch (type) {
+                case 'resistance':
+                    geometry = `
+                        <a-cylinder height="0.8" radius="0.02" color="#ffcc00" class="interactable" data-name="Wire"></a-cylinder>
+                        <a-sphere radius="0.05" color="#666" position="0 0.4 0" class="interactable" data-name="Top Connector"></a-sphere>
+                        <a-sphere radius="0.05" color="#666" position="0 -0.4 0" class="interactable" data-name="Bottom Connector"></a-sphere>
+                    `;
+                    description = 'Class 10: Test how a wire resists electric current.';
+                    concept = 'Concept: Ohm’s Law (V = IR) - Voltage = Current × Resistance';
+                    pointsEarned = 10;
+                    label.setAttribute('value', 'Wire Resistance Setup');
+                    entity.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 10000');
+                    break;
+                case 'acidbase':
+                    geometry = `
+                        <a-cylinder height="0.4" radius="0.2" color="#cccccc" opacity="0.5" class="interactable" data-name="Beaker"></a-cylinder>
+                        <a-cylinder height="0.2" radius="0.18" color="#00ccff" position="0 -0.1 0" class="interactable" data-name="Solution"></a-cylinder>
+                    `;
+                    description = 'Class 10: Mix acid and base, watch the change.';
+                    concept = 'Concept: Neutralization - Acid + Base → Salt + Water';
+                    pointsEarned = 15;
+                    label.setAttribute('value', 'Acid-Base Setup');
+                    break;
+                case 'pendulum':
+                    geometry = `
+                        <a-sphere radius="0.2" color="#ff6666" position="0 -0.5 0" class="interactable" data-name="Pendulum Bob"></a-sphere>
+                        <a-cylinder height="1" radius="0.01" color="#666" position="0 0.5 0" class="interactable" data-name="String"></a-cylinder>
+                    `;
+                    description = 'Class 11: Swing a weight to measure time.';
+                    concept = 'Concept: Period (T) depends on length, not mass';
+                    pointsEarned = 20;
+                    label.setAttribute('value', 'Pendulum Setup');
+                    entity.setAttribute('animation', 'property: rotation; to: -30 0 0; loop: true; dur: 2000; easing: easeInOutSine; dir: alternate');
+                    break;
+                case 'calorimetry':
+                    geometry = `
+                        <a-box width="0.4" height="0.4" depth="0.4" color="#66cc66" class="interactable" data-name="Calorimeter"></a-box>
+                        <a-box width="0.42" height="0.05" depth="0.42" color="#333" position="0 0.225 0" class="interactable" data-name="Lid"></a-box>
+                    `;
+                    description = 'Class 11: Heat water to find its capacity.';
+                    concept = 'Concept: Heat (Q) = Mass × Specific Heat × Temp Change';
+                    pointsEarned = 25;
+                    label.setAttribute('value', 'Calorimetry Setup');
+                    break;
+                case 'titration':
+                    geometry = `
+                        <a-cylinder height="0.8" radius="0.05" color="#cc66ff" class="interactable" data-name="Burette"></a-cylinder>
+                        <a-cone height="0.1" radius-bottom="0.05" radius-top="0.01" color="#cc66ff" position="0 -0.45 0" class="interactable" data-name="Nozzle"></a-cone>
+                    `;
+                    description = 'Class 12: Drop liquid to test strength.';
+                    concept = 'Concept: Equivalence Point - Acid moles = Base moles';
+                    pointsEarned = 30;
+                    label.setAttribute('value', 'Titration Setup');
+                    break;
+                case 'electrolytic':
+                    geometry = `
+                        <a-box width="0.5" height="0.3" depth="0.3" color="#ff9966" opacity="0.7" class="interactable" data-name="Cell Container"></a-box>
+                        <a-cylinder height="0.4" radius="0.02" color="#333" position="-0.15 0 0" class="interactable" data-name="Anode"></a-cylinder>
+                        <a-cylinder height="0.4" radius="0.02" color="#333" position="0.15 0 0" class="interactable" data-name="Cathode"></a-cylinder>
+                    `;
+                    description = 'Class 12: Use electricity to split liquid.';
+                    concept = 'Concept: Electrolysis - Current drives chemical change';
+                    pointsEarned = 35;
+                    label.setAttribute('value', 'Electrolytic Cell');
+                    break;
+                default:
+                    return;
+            }
+
+            entity.innerHTML = geometry + entity.querySelector('a-text').outerHTML;
+            entity.setAttribute('visible', 'true');
+            activeExperiment = type;
+            alert(`${description}\n${concept}\nEarn ${pointsEarned} points!`);
+            points += pointsEarned;
+            document.getElementById('points').textContent = points;
+            console.log(`Experiment ${type} started in ${currentMode} mode`);
+        }
+
+        function resetExperiment() {
+            const modeEntity = {
+                'ar': 'experiment-entity-ar',
+                'vr': 'experiment-entity-vr',
+                '3d': 'experiment-entity-3d'
+            };
+            const entity = document.getElementById(modeEntity[currentMode]);
+            const label = document.getElementById(`label-${currentMode}`);
+            entity.setAttribute('visible', 'false');
+            entity.removeAttribute('animation');
+            if (currentMode === '3d') {
+                entity.innerHTML = `
+                    <a-text id="label-3d" value="Interact with these 3D objects!" color="black" position="0 -0.5 0" scale="0.5 0.5 0.5" align="center"></a-text>
+                    <a-sphere position="-1 0 0" radius="0.3" color="#ff6666" class="interactable" data-name="Red Ball"></a-sphere>
+                    <a-box position="1 0 0" width="0.4" height="0.4" depth="0.4" color="#66cc66" class="interactable" data-name="Green Cube"></a-box>
+                    <a-cylinder position="0 0.5 0" height="0.6" radius="0.2" color="#6699ff" class="interactable" data-name="Blue Cylinder"></a-cylinder>
+                `;
+                entity.setAttribute('visible', 'true');
+            } else {
+                entity.innerHTML = `<a-text id="label-${currentMode}" value="" color="black" position="0 -0.5 0" scale="0.5 0.5 0.5" align="center"></a-text>`;
+            }
+            activeExperiment = null;
+            console.log('Experiment reset');
+        }
+
+        function returnToHome() {
+            const homepage = document.getElementById('homepage');
+            const scene = document.getElementById('scene');
+            const dashboard = document.getElementById('dashboard');
+
+            homepage.classList.remove('hidden');
+            scene.style.display = 'none';
+            dashboard.style.display = 'none';
+            resetExperiment();
+            currentMode = null;
+            console.log('Returned to home');
+        }
+
+        // Register custom component for interaction
+        AFRAME.registerComponent('interactable', {
+            init: function () {
+                const el = this.el;
+                const name = el.getAttribute('data-name');
+                
+                el.addEventListener('mouseenter', () => {
+                    el.setAttribute('material', 'color', '#ff9999');
+                    console.log(`Hovered over ${name}`);
+                });
+                
+                el.addEventListener('mouseleave', () => {
+                    el.setAttribute('material', 'color', el.getAttribute('color')); // Reset to original color
+                });
+                
+                el.addEventListener('click', () => {
+                    alert(`Clicked ${name}`);
+                    console.log(`Clicked ${name}`);
+                });
+
+                // For VR/3D hand interaction
+                el.addEventListener('gripdown', () => {
+                    if (currentMode === 'vr' || currentMode === '3d') {
+                        el.setAttribute('position', this.el.sceneEl.querySelector('#right-hand').getAttribute('position'));
+                        console.log(`${name} grabbed`);
+                    }
+                });
+            }
+        });
+
+        document.querySelector('#left-hand').setAttribute('grab-object', '');
+        document.querySelector('#right-hand').setAttribute('grab-object', '');
+
+        console.log('oLabs Offline 3D Simulation loaded. Run locally (e.g., "npx serve"). For AR, use Hiro marker. For VR, use Meta Quest Browser.');
+    </script>
+</body>
+</html>

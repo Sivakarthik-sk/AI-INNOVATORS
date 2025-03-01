@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Questions and Puzzles</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #004080;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 1rem;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #ccc;
+            margin-bottom: 1rem;
+        }
+
+        .tab {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            background: #e0e0e0;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            margin-right: 0.5rem;
+        }
+
+        .tab.active {
+            background: #fff;
+            border-bottom: 1px solid #fff;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 0 0 5px 5px;
+            padding: 1rem;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .form-group textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        .button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 0.5rem;
+        }
+
+        .button:hover {
+            background: #218838;
+        }
+
+        .button.secondary {
+            background: #007bff;
+        }
+
+        .button.secondary:hover {
+            background: #0056b3;
+        }
+
+        .button.remove {
+            background: #dc3545;
+        }
+
+        .button.remove:hover {
+            background: #c82333;
+        }
+
+        .search-filter {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .search-filter input, .search-filter select {
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .list {
+            margin-top: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .list-item {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 5px;
+            width: 400px;
+            max-width: 90%;
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+        }
+
+        .modal-content .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .modal-content .button {
+            margin-top: 1rem;
+        }
+
+        .message {
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 0.5rem; }
+            .tabs { flex-direction: column; }
+            .tab { margin-bottom: 0.5rem; }
+            .search-filter { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Manage Questions and Puzzles</h1>
+    </div>
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('puzzleTab')">Puzzle Game</div>
+            <div class="tab" onclick="showTab('memoryTab')">Memory Test</div>
+            <div class="tab" onclick="showTab('crosswordTab')">Box Maze - Crossword</div>
+            <div class="tab" onclick="showTab('levelsTab')">Levels</div>
+        </div>
+
+        <!-- Puzzle Game Tab -->
+        <div class="tab-content active" id="puzzleTab">
+            <div class="message" id="puzzleMessage"></div>
+            <h2>Puzzle Game (Logic, Sudoku, Sequence)</h2>
+            <div class="form-group">
+                <label>Math Sequence (e.g., "1, 3, 5, 7...") for Sequence Levels:</label>
+                <input type="text" id="puzzleMathSequence" placeholder="Enter sequence (comma-separated)">
+            </div>
+            <div class="form-group">
+                <label>Bulk Add Sequences (one per line, comma-separated):</label>
+                <textarea id="puzzleBulkSequences" placeholder="1, 3, 5, 7...\n2, 4, 6, 8..."></textarea>
+            </div>
+            <div class="form-group">
+                <button class="button" onclick="addPuzzleQuestion()">Add Sequence</button>
+                <button class="button secondary" onclick="bulkAddPuzzleQuestions()">Bulk Add</button>
+                <button class="button secondary" onclick="exportData('puzzle')">Export</button>
+                <input type="file" id="puzzleImport" style="display: none;" onchange="importData('puzzle', this)">
+                <button class="button secondary" onclick="document.getElementById('puzzleImport').click()">Import</button>
+            </div>
+            <div class="search-filter">
+                <input type="text" id="puzzleSearch" placeholder="Search sequences..." onkeyup="filterPuzzleQuestions()">
+            </div>
+            <div class="list" id="puzzleList"></div>
+        </div>
+
+        <!-- Memory Test Tab -->
+        <div class="tab-content" id="memoryTab">
+            <div class="message" id="memoryMessage"></div>
+            <h2>Memory Test (Sequence, Pattern, Number)</h2>
+            <p>Memory Test shares the same question bank as Puzzle Game for Sequence and Number levels. Edit in the Puzzle Game tab.</p>
+        </div>
+
+        <!-- Box Maze - Crossword Puzzle Tab -->
+        <div class="tab-content" id="crosswordTab">
+            <div class="message" id="crosswordMessage"></div>
+            <h2>Box Maze - Crossword Puzzle</h2>
+            <div class="form-group">
+                <label>Clue:</label>
+                <input type="text" id="crosswordClue" placeholder="Enter clue (e.g., Gas evolved when zinc reacts with dilute H₂SO₄?)">
+            </div>
+            <div class="form-group">
+                <label>Answer (letters only):</label>
+                <input type="text" id="crosswordAnswer" placeholder="Enter answer (e.g., hydrogen)">
+            </div>
+            <div class="form-group">
+                <label>Class Level (9-12):</label>
+                <select id="crosswordClass">
+                    <option value="9">Class 9</option>
+                    <option value="10">Class 10</option>
+                    <option value="11">Class 11</option>
+                    <option value="12">Class 12</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Bulk Add Clues (one per line, format: clue|answer|class):</label>
+                <textarea id="crosswordBulkClues" placeholder="Gas evolved when zinc reacts with dilute H₂SO₄?|hydrogen|9\nInstrument to measure atmospheric pressure?|barometer|9"></textarea>
+            </div>
+            <div class="form-group">
+                <button class="button" onclick="addCrosswordQuestion()">Add Clue</button>
+                <button class="button secondary" onclick="bulkAddCrosswordQuestions()">Bulk Add</button>
+                <button class="button secondary" onclick="exportData('crossword')">Export</button>
+                <input type="file" id="crosswordImport" style="display: none;" onchange="importData('crossword', this)">
+                <button class="button secondary" onclick="document.getElementById('crosswordImport').click()">Import</button>
+            </div>
+            <div class="search-filter">
+                <input type="text" id="crosswordSearch" placeholder="Search clues..." onkeyup="filterCrosswordQuestions()">
+                <select id="crosswordClassFilter" onchange="filterCrosswordQuestions()">
+                    <option value="">All Classes</option>
+                    <option value="9">Class 9</option>
+                    <option value="10">Class 10</option>
+                    <option value="11">Class 11</option>
+                    <option value="12">Class 12</option>
+                </select>
+            </div>
+            <div class="list" id="crosswordList"></div>
+        </div>
+
+        <!-- Levels Tab -->
+        <div class="tab-content" id="levelsTab">
+            <div class="message" id="levelsMessage"></div>
+            <h2>Manage Levels</h2>
+            <div class="form-group">
+                <label>Game:</label>
+                <select id="levelGame" onchange="loadLevels()">
+                    <option value="puzzle">Puzzle Game</option>
+                    <option value="memory">Memory Test</option>
+                    <option value="crossword">Box Maze - Crossword</option>
+                </select>
+            </div>
+            <div class="list" id="levelsList"></div>
+        </div>
+
+        <!-- Edit Modal -->
+        <div class="modal" id="editModal">
+            <div class="modal-content">
+                <h3>Edit</h3>
+                <div class="form-group">
+                    <label id="editLabel1"></label>
+                    <input type="text" id="editField1">
+                </div>
+                <div class="form-group" id="editExtraField1" style="display: none;">
+                    <label id="editLabel2"></label>
+                    <input type="text" id="editField2">
+                </div>
+                <div class="form-group" id="editExtraField2" style="display: none;">
+                    <label id="editLabel3"></label>
+                    <select id="editField3">
+                        <option value="9">Class 9</option>
+                        <option value="10">Class 10</option>
+                        <option value="11">Class 11</option>
+                        <option value="12">Class 12</option>
+                    </select>
+                </div>
+                <button class="button" onclick="saveEdit()">Save</button>
+                <button class="button secondary" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Password Protection
+        const password = "admin123"; // Replace with a secure password
+        if (!localStorage.getItem('adminAuthenticated')) {
+            const pass = prompt('Enter admin password:');
+            if (pass !== password) {
+                alert('Incorrect password!');
+                window.location.href = 'index.html';
+            } else {
+                localStorage.setItem('adminAuthenticated', 'true');
+            }
+        }
+
+        // Data Storage
+        let puzzleQuestions = JSON.parse(localStorage.getItem('puzzleQuestions')) || [
+            { mathSequence: "1, 3, 5, 7..." },
+            { mathSequence: "2, 4, 6, 8..." },
+            { mathSequence: "2, 4, 8, 16..." }
+        ];
+
+        let crosswordQuestions = JSON.parse(localStorage.getItem('crosswordQuestions')) || [
+            { answer: "hydrogen", clue: "Gas evolved when zinc reacts with dilute H₂SO₄?", class: 9 },
+            { answer: "barometer", clue: "Instrument to measure atmospheric pressure?", class: 9 },
+            { answer: "acid", clue: "Solution turning blue litmus red?", class: 9 },
+            { answer: "ampere", clue: "Unit of electric current?", class: 9 },
+            { answer: "red", clue: "Color of litmus in acid?", class: 9 },
+            { answer: "salt", clue: "Product of acid-base reaction?", class: 9 },
+            { answer: "evaporation", clue: "Process of separating salt from water?", class: 10 },
+            { answer: "co2", clue: "Gas used in photosynthesis (abbr.)?", class: 10 },
+            { answer: "concave", clue: "Lens used to correct myopia?", class: 10 },
+            { answer: "ohmmeter", clue: "Instrument to measure resistance?", class: 10 },
+            { answer: "ph", clue: "Measure of acidity?", class: 10 },
+            { answer: "lime", clue: "Substance used to test CO₂?", class: 10 },
+            { answer: "phenol", clue: "Indicator used in titration (abbr.)?", class: 11 },
+            { answer: "mass", clue: "Law of conservation applies to?", class: 11 },
+            { answer: "tesla", clue: "Unit of magnetic field strength?", class: 11 },
+            { answer: "oxygen", clue: "Gas produced in electrolysis of water?", class: 11 },
+            { answer: "mole", clue: "Unit of amount of substance?", class: 11 },
+            { answer: "emf", clue: "Electromotive force (abbr.)?", class: 11 },
+            { answer: "translation", clue: "Process of protein synthesis?", class: 12 },
+            { answer: "iodine", clue: "Reagent to test starch?", class: 12 },
+            { answer: "becquerel", clue: "Unit of radioactivity?", class: 12 },
+            { answer: "iron", clue: "Catalyst in Haber process?", class: 12 },
+            { answer: "voltmeter", clue: "Device to measure potential difference?", class: 12 },
+            { answer: "dna", clue: "Genetic material in cells?", class: 12 },
+            { answer: "ph", clue: "Measure of solution acidity?", class: 12 },
+            { answer: "urea", clue: "Compound tested in urine?", class: 12 }
+        ];
+
+        let puzzleLevels = JSON.parse(localStorage.getItem('puzzleLevels')) || [
+            { size: 3, questions: 2, points: 20, unlock: 0, desc: 'Solve the logic grid' },
+            { size: 3, questions: 3, points: 25, unlock: 20, desc: 'Complete the mini sudoku' },
+            { size: 3, questions: 4, points: 30, unlock: 45, desc: 'Find the next sequence' },
+            { size: 4, questions: 4, points: 40, unlock: 75, desc: 'Advanced logic grid' },
+            { size: 4, questions: 5, points: 45, unlock: 115, desc: 'Larger sudoku puzzle' },
+            { size: 4, questions: 6, points: 50, unlock: 160, desc: 'Complex sequence solver' },
+            { size: 5, questions: 6, points: 55, unlock: 210, desc: 'Challenging logic grid' },
+            { size: 5, questions: 7, points: 70, unlock: 265, desc: 'Tough sudoku challenge' },
+            { size: 5, questions: 8, points: 75, unlock: 335, desc: 'Tricky sequence puzzle' },
+            { size: 5, questions: 9, points: 80, unlock: 410, desc: 'Expert logic grid' }
+        ];
+
+        let memoryLevels = JSON.parse(localStorage.getItem('memoryLevels')) || [
+            { size: 4, words: 3, points: 15, unlock: 0, desc: 'Recall the sequence' },
+            { size: 4, words: 4, points: 20, unlock: 15, desc: 'Memorize the pattern' },
+            { size: 4, words: 5, points: 25, unlock: 35, desc: 'Number span test' },
+            { size: 5, words: 6, points: 30, unlock: 60, desc: 'Longer sequence recall' },
+            { size: 5, words: 7, points: 35, unlock: 90, desc: 'Complex pattern memory' },
+            { size: 5, words: 8, points: 40, unlock: 125, desc: 'Advanced number span' },
+            { size: 6, words: 9, points: 45, unlock: 165, desc: 'Extended sequence recall' },
+            { size: 6, words: 10, points: 50, unlock: 210, desc: 'Intricate pattern memory' },
+            { size: 6, words: 11, points: 55, unlock: 260, desc: 'Expert number span' },
+            { size: 6, words: 12, points: 60, unlock: 315, desc: 'Master sequence challenge' }
+        ];
+
+        let crosswordLevels = JSON.parse(localStorage.getItem('crosswordLevels')) || [
+            { size: 4, words: 3, points: 20, unlock: 0, desc: 'Class 9 Lab Basics' },
+            { size: 4, words: 4, points: 25, unlock: 20, desc: 'Class 9 Chemistry' },
+            { size: 4, words: 5, points: 30, unlock: 45, desc: 'Class 9 Physics' },
+            { size: 5, words: 6, points: 35, unlock: 75, desc: 'Class 10 Biology' },
+            { size: 5, words: 7, points: 40, unlock: 110, desc: 'Class 10 Chemistry' },
+            { size: 5, words: 8, points: 45, unlock: 150, desc: 'Class 10 Physics' },
+            { size: 6, words: 9, points: 50, unlock: 195, desc: 'Class 11 Chemistry' },
+            { size: 6, words: 10, points: 55, unlock: 245, desc: 'Class 11 Physics' },
+            { size: 6, words: 11, points: 60, unlock: 300, desc: 'Class 12 Biology' },
+            { size: 6, words: 12, points: 65, unlock: 360, desc: 'Class 12 Advanced Labs' }
+        ];
+
+        function saveData() {
+            localStorage.setItem('puzzleQuestions', JSON.stringify(puzzleQuestions));
+            localStorage.setItem('crosswordQuestions', JSON.stringify(crosswordQuestions));
+            localStorage.setItem('puzzleLevels', JSON.stringify(puzzleLevels));
+            localStorage.setItem('memoryLevels', JSON.stringify(memoryLevels));
+            localStorage.setItem('crosswordLevels', JSON.stringify(crosswordLevels));
+        }
+
+        function showTab(tabId) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
+            if (tabId === 'levelsTab') loadLevels();
+        }
+
+        function showMessage(elementId, message, type) {
+            const messageEl = document.getElementById(elementId);
+            messageEl.textContent = message;
+            messageEl.className = `message ${type}`;
+            messageEl.style.display = 'block';
+            setTimeout(() => messageEl.style.display = 'none', 3000);
+        }
+
+        // Puzzle Game Management
+        function loadPuzzleQuestions() {
+            const list = document.getElementById('puzzleList');
+            const search = document.getElementById('puzzleSearch').value.toLowerCase();
+            list.innerHTML = '';
+            puzzleQuestions.filter(q => q.mathSequence.toLowerCase().includes(search)).forEach((q, index) => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.innerHTML = `
+                    <span>Math Sequence: ${q.mathSequence}</span>
+                    <div>
+                        <button class="button" onclick="openEditModal('puzzle', ${index}, 'Math Sequence', 'mathSequence')">Edit</button>
+                        <button class="button remove" onclick="removePuzzleQuestion(${index})">Remove</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function addPuzzleQuestion() {
+            const mathSequence = document.getElementById('puzzleMathSequence').value.trim();
+            if (!mathSequence) {
+                showMessage('puzzleMessage', 'Please enter a math sequence.', 'error');
+                return;
+            }
+            if (!/^[\d\s,]+$/.test(mathSequence)) {
+                showMessage('puzzleMessage', 'Math sequence should contain numbers and commas only.', 'error');
+                return;
+            }
+            puzzleQuestions.push({ mathSequence });
+            saveData();
+            loadPuzzleQuestions();
+            document.getElementById('puzzleMathSequence').value = '';
+            showMessage('puzzleMessage', 'Math sequence added successfully!', 'success');
+        }
+
+        function bulkAddPuzzleQuestions() {
+            const bulkInput = document.getElementById('puzzleBulkSequences').value.trim();
+            if (!bulkInput) {
+                showMessage('puzzleMessage', 'Please enter sequences to bulk add.', 'error');
+                return;
+            }
+            const lines = bulkInput.split('\n').map(line => line.trim()).filter(line => line);
+            let added = 0;
+            lines.forEach(line => {
+                if (/^[\d\s,]+$/.test(line)) {
+                    puzzleQuestions.push({ mathSequence: line });
+                    added++;
+                }
+            });
+            saveData();
+            loadPuzzleQuestions();
+            document.getElementById('puzzleBulkSequences').value = '';
+            showMessage('puzzleMessage', `Added ${added} sequences successfully!`, 'success');
+        }
+
+        function filterPuzzleQuestions() {
+            loadPuzzleQuestions();
+        }
+
+        function removePuzzleQuestion(index) {
+            if (confirm('Are you sure you want to remove this math sequence?')) {
+                puzzleQuestions.splice(index, 1);
+                saveData();
+                loadPuzzleQuestions();
+                showMessage('puzzleMessage', 'Math sequence removed successfully!', 'success');
+            }
+        }
+
+        // Crossword Puzzle Management
+        function loadCrosswordQuestions() {
+            const list = document.getElementById('crosswordList');
+            const search = document.getElementById('crosswordSearch').value.toLowerCase();
+            const classFilter = document.getElementById('crosswordClassFilter').value;
+            list.innerHTML = '';
+            crosswordQuestions.filter(q => {
+                const matchesSearch = q.clue.toLowerCase().includes(search) || q.answer.toLowerCase().includes(search);
+                const matchesClass = !classFilter || q.class.toString() === classFilter;
+                return matchesSearch && matchesClass;
+            }).forEach((q, index) => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.innerHTML = `
+                    <span>Clue: ${q.clue}, Answer: ${q.answer}, Class: ${q.class}</span>
+                    <div>
+                        <button class="button" onclick="openEditModal('crossword', ${index}, 'Clue', 'clue', 'Answer', 'answer', 'Class', 'class')">Edit</button>
+                        <button class="button remove" onclick="removeCrosswordQuestion(${index})">Remove</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function addCrosswordQuestion() {
+            const clue = document.getElementById('crosswordClue').value.trim();
+            const answer = document.getElementById('crosswordAnswer').value.trim().toLowerCase();
+            const classLevel = parseInt(document.getElementById('crosswordClass').value);
+            if (!clue || !answer) {
+                showMessage('crosswordMessage', 'Please enter both a clue and an answer.', 'error');
+                return;
+            }
+            if (!/^[a-z]+$/.test(answer)) {
+                showMessage('crosswordMessage', 'Answer should contain letters only.', 'error');
+                return;
+            }
+            crosswordQuestions.push({ clue, answer, class: classLevel });
+            saveData();
+            loadCrosswordQuestions();
+            document.getElementById('crosswordClue').value = '';
+            document.getElementById('crosswordAnswer').value = '';
+            showMessage('crosswordMessage', 'Clue added successfully!', 'success');
+        }
+
+        function bulkAddCrosswordQuestions() {
+            const bulkInput = document.getElementById('crosswordBulkClues').value.trim();
+            if (!bulkInput) {
+                showMessage('crosswordMessage', 'Please enter clues to bulk add.', 'error');
+                return;
+            }
+            const lines = bulkInput.split('\n').map(line => line.trim()).filter(line => line);
+            let added = 0;
+            lines.forEach(line => {
+                const [clue, answer, classLevel] = line.split('|').map(part => part.trim());
+                if (clue && answer && classLevel && /^[a-z]+$/.test(answer.toLowerCase()) && [9, 10, 11, 12].includes(parseInt(classLevel))) {
+                    crosswordQuestions.push({ clue, answer: answer.toLowerCase(), class: parseInt(classLevel) });
+                    added++;
+                }
+            });
+            saveData();
+            loadCrosswordQuestions();
+            document.getElementById('crosswordBulkClues').value = '';
+            showMessage('crosswordMessage', `Added ${added} clues successfully!`, 'success');
+        }
+
+        function filterCrosswordQuestions() {
+            loadCrosswordQuestions();
+        }
+
+        function removeCrosswordQuestion(index) {
+            if (confirm('Are you sure you want to remove this clue?')) {
+                crosswordQuestions.splice(index, 1);
+                saveData();
+                loadCrosswordQuestions();
+                showMessage('crosswordMessage', 'Clue removed successfully!', 'success');
+            }
+        }
+
+        // Levels Management
+        function loadLevels() {
+            const game = document.getElementById('levelGame').value;
+            const levelsData = game === 'puzzle' ? puzzleLevels : game === 'memory' ? memoryLevels : crosswordLevels;
+            const list = document.getElementById('levelsList');
+            list.innerHTML = '';
+            levelsData.forEach((level, index) => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.innerHTML = `
+                    <span>Level ${index + 1}: ${level.desc}, Size: ${level.size}, Words/Questions: ${level.words || level.questions}, Points: ${level.points}, Unlock: ${level.unlock}</span>
+                    <div>
+                        <button class="button" onclick="openEditLevelModal('${game}', ${index})">Edit</button>
+                        <button class="button remove" onclick="removeLevel('${game}', ${index})">Remove</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function addLevel(game) {
+            const levelsData = game === 'puzzle' ? puzzleLevels : game === 'memory' ? memoryLevels : crosswordLevels;
+            levelsData.push({
+                size: 4,
+                words: game === 'puzzle' ? 2 : 3, // Default for puzzle is questions, others are words
+                questions: game === 'puzzle' ? 2 : undefined,
+                points: 20,
+                unlock: 0,
+                desc: 'New Level'
+            });
+            saveData();
+            loadLevels();
+            showMessage('levelsMessage', 'Level added successfully!', 'success');
+        }
+
+        function openEditLevelModal(game, index) {
+            const levelsData = game === 'puzzle' ? puzzleLevels : game === 'memory' ? memoryLevels : crosswordLevels;
+            const level = levelsData[index];
+            currentEdit = { type: 'level', game, index };
+            document.getElementById('editLabel1').textContent = 'Description';
+            document.getElementById('editField1').value = level.desc;
+            document.getElementById('editExtraField1').style.display = 'block';
+            document.getElementById('editLabel2').textContent = 'Size';
+            document.getElementById('editField2').value = level.size;
+            document.getElementById('editExtraField2').style.display = 'block';
+            document.getElementById('editLabel3').textContent = game === 'puzzle' ? 'Questions' : 'Words';
+            document.getElementById('editField3').type = 'number';
+            document.getElementById('editField3').value = game === 'puzzle' ? level.questions : level.words;
+            document.getElementById('editField3').style.display = 'block';
+            document.getElementById('editField3').innerHTML = ''; // Clear select options
+            document.getElementById('editField3').type = 'number';
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function removeLevel(game, index) {
+            if (confirm('Are you sure you want to remove this level?')) {
+                const levelsData = game === 'puzzle' ? puzzleLevels : game === 'memory' ? memoryLevels : crosswordLevels;
+                levelsData.splice(index, 1);
+                saveData();
+                loadLevels();
+                showMessage('levelsMessage', 'Level removed successfully!', 'success');
+            }
+        }
+
+        // Modal Management
+        let currentEdit = null;
+
+        function openEditModal(type, index, label1, field1, label2, field2, label3, field3) {
+            currentEdit = { type, index, field1, field2, field3 };
+            document.getElementById('editLabel1').textContent = label1;
+            document.getElementById('editField1').value = type === 'puzzle' ? puzzleQuestions[index][field1] : crosswordQuestions[index][field1];
+            document.getElementById('editExtraField1').style.display = label2 ? 'block' : 'none';
+            document.getElementById('editExtraField2').style.display = label3 ? 'block' : 'none';
+            if (label2) {
+                document.getElementById('editLabel2').textContent = label2;
+                document.getElementById('editField2').value = crosswordQuestions[index][field2];
+            }
+            if (label3) {
+                document.getElementById('editLabel3').textContent = label3;
+                document.getElementById('editField3').value = crosswordQuestions[index][field3];
+            }
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function saveEdit() {
+            const value1 = document.getElementById('editField1').value.trim();
+            const value2 = document.getElementById('editField2').value;
+            const value3 = document.getElementById('editField3').value;
+
+            if (currentEdit.type === 'puzzle') {
+                if (!value1 || !/^[\d\s,]+$/.test(value1)) {
+                    alert('Math sequence should contain numbers and commas only.');
+                    return;
+                }
+                puzzleQuestions[currentEdit.index][currentEdit.field1] = value1;
+                loadPuzzleQuestions();
+                showMessage('puzzleMessage', 'Math sequence updated successfully!', 'success');
+            } else if (currentEdit.type === 'crossword') {
+                if (!value1 || !value2 || !/^[a-z]+$/.test(value2.toLowerCase())) {
+                    alert('Please enter a valid clue and answer (letters only).');
+                    return;
+                }
+                crosswordQuestions[currentEdit.index][currentEdit.field1] = value1;
+                crosswordQuestions[currentEdit.index][currentEdit.field2] = value2.toLowerCase();
+                crosswordQuestions[currentEdit.index][currentEdit.field3] = parseInt(value3);
+                loadCrosswordQuestions();
+                showMessage('crosswordMessage', 'Clue updated successfully!', 'success');
+            } else if (currentEdit.type === 'level') {
+                const levelsData = currentEdit.game === 'puzzle' ? puzzleLevels : currentEdit.game === 'memory' ? memoryLevels : crosswordLevels;
+                levelsData[currentEdit.index].desc = value1;
+                levelsData[currentEdit.index].size = parseInt(value2);
+                if (currentEdit.game === 'puzzle') {
+                    levelsData[currentEdit.index].questions = parseInt(value3);
+                } else {
+                    levelsData[currentEdit.index].words = parseInt(value3);
+                }
+                loadLevels();
+                showMessage('levelsMessage', 'Level updated successfully!', 'success');
+            }
+            saveData();
+            closeModal();
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').style.display = 'none';
+            currentEdit = null;
+        }
+
+        // Export/Import Data
+        function exportData(type) {
+            const data = type === 'puzzle' ? puzzleQuestions : crosswordQuestions;
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${type}_questions.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importData(type, input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (type === 'puzzle') {
+                        puzzleQuestions = data.filter(q => q.mathSequence && /^[\d\s,]+$/.test(q.mathSequence));
+                        loadPuzzleQuestions();
+                        showMessage('puzzleMessage', 'Sequences imported successfully!', 'success');
+                    } else {
+                        crosswordQuestions = data.filter(q => q.clue && q.answer && /^[a-z]+$/.test(q.answer) && [9, 10, 11, 12].includes(q.class));
+                        loadCrosswordQuestions();
+                        showMessage('crosswordMessage', 'Clues imported successfully!', 'success');
+                    }
+                    saveData();
+                } catch (err) {
+                    showMessage(type === 'puzzle' ? 'puzzleMessage' : 'crosswordMessage', 'Invalid file format.', 'error');
+                }
+            };
+            reader.readAsText(file);
+            input.value = '';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPuzzleQuestions();
+            loadCrosswordQuestions();
+            loadLevels();
+        });
+    </script>
+</body>
+</html>

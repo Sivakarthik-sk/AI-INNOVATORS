@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biology Quiz - OLabs</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f6f5;
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: #005670;
+            color: white;
+            padding: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .header nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .nav-links a:hover {
+            color: #ffd700;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            flex: 1;
+            position: relative;
+        }
+
+        .level-selector, .quiz-container, .result-container {
+            padding: 1.5rem;
+        }
+
+        .level-selector h2, .quiz-container h2, .result-container h2 {
+            color: #005670;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .level-buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(3, auto);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .level-buttons button:nth-child(1) { grid-area: 1 / 1; }
+        .level-buttons button:nth-child(2) { grid-area: 1 / 2; }
+        .level-buttons button:nth-child(3) { grid-area: 1 / 3; }
+        .level-buttons button:nth-child(4) { grid-area: 1 / 4; }
+        .level-buttons button:nth-child(5) { grid-area: 1 / 5; }
+        .level-buttons button:nth-child(6) { grid-area: 2 / 1; }
+        .level-buttons button:nth-child(7) { grid-area: 2 / 2; }
+        .level-buttons button:nth-child(8) { grid-area: 2 / 3; }
+        .level-buttons button:nth-child(9) { grid-area: 2 / 4; }
+        .level-buttons button:nth-child(10) { grid-area: 2 / 5; }
+        .level-buttons button:nth-child(11) { grid-area: 3 / 1; }
+        .level-buttons button:nth-child(12) { grid-area: 3 / 2; }
+        .level-buttons button:nth-child(13) { grid-area: 3 / 3; }
+        .level-buttons button:nth-child(14) { grid-area: 3 / 4; }
+        .level-buttons button:nth-child(15) { grid-area: 3 / 5; }
+        .timer {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            font-weight: bold;
+            color: #005670;
+        }
+        .question {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+        .options {
+            display: grid;
+            gap: 1rem;
+        }
+        .option {
+            background: #eef4f7;
+            padding: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+        .option.correct {
+            background: #22c55e !important;
+            color: white;
+        }
+        .option.incorrect {
+            background: #ef4444 !important;
+            color: white;
+        }
+        .option:hover {
+            background: #d1e0e6;
+            transform: translateY(-2px);
+        }
+        .selected {
+            pointer-events: none;
+        }
+        .reason {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 5px;
+            font-size: 1rem;
+            text-align: center;
+            display: none;
+        }
+        .reason.correct {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        .reason.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+        .back-button, .restart-button, .next-button, .prev-button, .level-button {
+            background: #005670;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+            font-size: 1rem;
+        }
+        .level-button.easy {
+            background: #83fd08;
+            color: black;
+        }
+        .level-button.medium {
+            background: #fdfd08;
+            color: black;
+        }
+        .level-button.difficult {
+            background: #fd0808;
+            color: white;
+        }
+        .level-button.locked {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .back-button:hover, .restart-button:hover, .next-button:hover, .prev-button:hover, .level-button:not(.locked):hover {
+            background: #003d52;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .next-button:disabled, .prev-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .footer {
+            background-color: #005670;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            margin-top: 20px;
+        }
+        .emoji-container {
+            position: absolute;
+            top: 20px;
+            bottom: 20px;
+            width: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            font-size: 2rem;
+            opacity: 0.3;
+            z-index: 1;
+        }
+        .emoji-container.left {
+            left: 10px;
+        }
+        .emoji-container.right {
+            right: 10px;
+        }
+        .emoji-container div {
+            animation: float 4s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { 
+                transform: translateY(0) translateX(0); 
+            }
+            25% { 
+                transform: translateY(-20px) translateX(-10px); 
+            }
+            75% { 
+                transform: translateY(-20px) translateX(10px); 
+            }
+        }
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 15px;
+            }
+            .header nav {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .nav-links {
+                flex-direction: column;
+                text-align: center;
+            }
+            .level-buttons {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.5rem;
+            }
+            .emoji-container {
+                display: none;
+            }
+        }
+        @media (max-width: 480px) {
+            .level-buttons {
+                grid-template-columns: 1fr;
+            }
+            .question {
+                font-size: 1.2rem;
+            }
+            .option {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav>
+            <div class="logo" id="subject-title">OLabs Quiz</div>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="#">Experiments</a>
+                <a href="#">Resources</a>
+                <a href="#">Contact</a>
+            </div>
+        </nav>
+    </header>
+
+    <div class="emoji-container left">
+        <div>🧬</div>
+        <div>🌱</div>
+        <div>🦠</div>
+        <div>🧪</div>
+    </div>
+
+    <div class="emoji-container right">
+        <div>🩺</div>
+        <div>🦴</div>
+        <div>🧠</div>
+        <div>🌿</div>
+    </div>
+
+    <div class="container">
+        <button class="back-button" onclick="goBack()">← Back to Home</button>
+        <div class="level-selector" id="level-selector">
+            <h2>Select a Level</h2>
+            <div class="level-buttons">
+                <button class="level-button easy" onclick="startQuiz(1)">Level 1</button>
+                <button class="level-button easy" onclick="startQuiz(2)">Level 2</button>
+                <button class="level-button easy" onclick="startQuiz(3)">Level 3</button>
+                <button class="level-button easy" onclick="startQuiz(4)">Level 4</button>
+                <button class="level-button easy" onclick="startQuiz(5)">Level 5</button>
+                <button class="level-button medium" onclick="startQuiz(6)">Level 6</button>
+                <button class="level-button medium" onclick="startQuiz(7)">Level 7</button>
+                <button class="level-button medium" onclick="startQuiz(8)">Level 8</button>
+                <button class="level-button medium" onclick="startQuiz(9)">Level 9</button>
+                <button class="level-button medium" onclick="startQuiz(10)">Level 10</button>
+                <button class="level-button difficult" onclick="startQuiz(11)">Level 11</button>
+                <button class="level-button difficult" onclick="startQuiz(12)">Level 12</button>
+                <button class="level-button difficult" onclick="startQuiz(13)">Level 13</button>
+                <button class="level-button difficult" onclick="startQuiz(14)">Level 14</button>
+                <button class="level-button difficult" onclick="startQuiz(15)">Level 15</button>
+            </div>
+        </div>
+        <div class="quiz-container" id="quiz-container" style="display: none;">
+            <div id="question-container">
+                <div class="timer" id="timer">Time Left: --:--</div>
+                <div class="question" id="question">Loading question...</div>
+                <div class="options" id="options"></div>
+                <div class="reason" id="reason"></div>
+                <div>
+                    <button class="prev-button" id="prev-button" onclick="prevQuestion()" disabled>Previous</button>
+                    <button class="next-button" id="next-button" onclick="nextQuestion()" disabled>Next</button>
+                </div>
+            </div>
+        </div>
+        <div class="result-container" id="result-container" style="display: none;">
+            <h2>Quiz Completed! 🎉</h2>
+            <p>Your total score: <span id="final-score">0</span></p>
+            <button class="restart-button" onclick="restartQuiz()">Restart Quiz 🔁</button>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>© 2025 OLabs. All rights reserved.</p>
+    </footer>
+
+    <script>
+        let score = 0;
+        let currentQuestionIndex = 0;
+        let timeLeft = 0;
+        let timerInterval;
+        let shuffledQuestions = [];
+        let selectedLevel = 1;
+        let answers = new Array(15).fill(null);
+        let subject = new URLSearchParams(window.location.search).get('subject') || 'biology';
+
+        // Update header based on subject
+        document.getElementById('subject-title').textContent = `OLabs ${subject.charAt(0).toUpperCase() + subject.slice(1)} Quiz`;
+
+        const levels = {
+            biology: {
+                1: [
+                    { q: "What is the basic unit of life?", options: ["Atom", "Cell", "Molecule", "Tissue"], answer: 1, reason: "The cell is the smallest unit capable of performing life functions." },
+                    { q: "Which organelle is the powerhouse of the cell?", options: ["Nucleus", "Mitochondria", "Ribosome", "Golgi"], answer: 1, reason: "Mitochondria produce ATP, the cell’s energy currency." },
+                    { q: "What gas do plants take in during photosynthesis?", options: ["Oxygen", "Carbon dioxide", "Nitrogen", "Hydrogen"], answer: 1, reason: "Carbon dioxide is used to produce glucose in photosynthesis." },
+                    { q: "What is the primary source of energy for Earth?", options: ["Moon", "Sun", "Wind", "Water"], answer: 1, reason: "The Sun provides energy for photosynthesis and climate." },
+                    { q: "What molecule stores genetic information?", options: ["Protein", "DNA", "Lipid", "Carbohydrate"], answer: 1, reason: "DNA contains the genetic code for organisms." },
+                    { q: "Which process converts glucose into energy?", options: ["Photosynthesis", "Respiration", "Transpiration", "Digestion"], answer: 1, reason: "Respiration breaks down glucose to release energy." },
+                    { q: "What is the outermost layer of a plant cell?", options: ["Cell membrane", "Cell wall", "Nucleus", "Cytoplasm"], answer: 1, reason: "The cell wall provides structure and protection in plants." },
+                    { q: "Which type of cell lacks a nucleus?", options: ["Eukaryotic", "Prokaryotic", "Plant", "Animal"], answer: 1, reason: "Prokaryotic cells, like bacteria, lack a true nucleus." },
+                    { q: "What pigment absorbs sunlight in plants?", options: ["Hemoglobin", "Chlorophyll", "Melanin", "Carotene"], answer: 1, reason: "Chlorophyll captures light energy for photosynthesis." },
+                    { q: "What is the main component of the cell membrane?", options: ["Protein", "Phospholipid", "Carbohydrate", "Nucleic acid"], answer: 1, reason: "Phospholipids form the bilayer structure of the membrane." },
+                    { q: "Which organelle synthesizes proteins?", options: ["Ribosome", "Mitochondria", "Lysosome", "Endoplasmic reticulum"], answer: 0, reason: "Ribosomes assemble amino acids into proteins." },
+                    { q: "What is the process of water movement in plants?", options: ["Photosynthesis", "Transpiration", "Respiration", "Diffusion"], answer: 1, reason: "Transpiration drives water movement through plants." },
+                    { q: "What is the smallest unit of classification?", options: ["Genus", "Species", "Family", "Order"], answer: 1, reason: "Species is the most specific taxonomic level." },
+                    { q: "Which kingdom includes bacteria?", options: ["Plantae", "Animalia", "Monera", "Fungi"], answer: 2, reason: "Monera includes prokaryotic organisms like bacteria." },
+                    { q: "What gas is released during photosynthesis?", options: ["Oxygen", "Carbon dioxide", "Nitrogen", "Hydrogen"], answer: 0, reason: "Oxygen is a byproduct of photosynthesis." }
+                ],
+                2: [
+                    { q: "What is the function of the nucleus?", options: ["Energy production", "Protein synthesis", "Genetic control", "Waste removal"], answer: 2, reason: "The nucleus houses DNA and controls cell activities." },
+                    { q: "Which process divides the cell into two?", options: ["Mitosis", "Meiosis", "Binary fission", "Budding"], answer: 0, reason: "Mitosis produces two identical daughter cells." },
+                    { q: "What is the site of photosynthesis in plant cells?", options: ["Mitochondria", "Chloroplast", "Nucleus", "Vacuole"], answer: 1, reason: "Chloroplasts contain chlorophyll for photosynthesis." },
+                    { q: "What molecule carries oxygen in blood?", options: ["Hemoglobin", "Chlorophyll", "Glucose", "Insulin"], answer: 0, reason: "Hemoglobin binds oxygen in red blood cells." },
+                    { q: "Which phase of mitosis follows prophase?", options: ["Metaphase", "Anaphase", "Telophase", "Interphase"], answer: 0, reason: "Metaphase follows prophase in mitosis." },
+                    { q: "What is the primary function of the cell wall?", options: ["Protection", "Energy storage", "Protein synthesis", "Transport"], answer: 0, reason: "The cell wall protects and supports plant cells." },
+                    { q: "Which organelle digests waste in cells?", options: ["Lysosome", "Golgi", "Ribosome", "Mitochondria"], answer: 0, reason: "Lysosomes contain enzymes to break down waste." },
+                    { q: "What is the role of RNA in cells?", options: ["Stores DNA", "Protein synthesis", "Energy production", "Cell division"], answer: 1, reason: "RNA translates genetic info into proteins." },
+                    { q: "Which tissue transports water in plants?", options: ["Phloem", "Xylem", "Epidermis", "Parenchyma"], answer: 1, reason: "Xylem carries water and minerals in plants." },
+                    { q: "What is osmosis?", options: ["Diffusion of water", "Active transport", "Protein movement", "Gas exchange"], answer: 0, reason: "Osmosis is the passive movement of water across a membrane." },
+                    { q: "Which organelle modifies proteins?", options: ["Ribosome", "Golgi apparatus", "Mitochondria", "Endoplasmic reticulum"], answer: 1, reason: "The Golgi apparatus modifies and packages proteins." },
+                    { q: "What is the largest organelle in a plant cell?", options: ["Nucleus", "Vacuole", "Mitochondria", "Chloroplast"], answer: 1, reason: "The vacuole occupies most of a plant cell’s volume." },
+                    { q: "Which process produces gametes?", options: ["Mitosis", "Meiosis", "Fission", "Diffusion"], answer: 1, reason: "Meiosis forms gametes with half the chromosome number." },
+                    { q: "What is the function of the stomata?", options: ["Photosynthesis", "Gas exchange", "Water storage", "Protein synthesis"], answer: 1, reason: "Stomata allow gas exchange in plants." },
+                    { q: "Which molecule is the energy currency of cells?", options: ["ATP", "DNA", "Glucose", "RNA"], answer: 0, reason: "ATP provides energy for cellular processes." }
+                ],
+                3: [
+                    { q: "What is the genetic material in viruses?", options: ["DNA only", "RNA only", "DNA or RNA", "Protein"], answer: 2, reason: "Viruses can have either DNA or RNA as genetic material." },
+                    { q: "Which phase aligns chromosomes at the equator?", options: ["Prophase", "Metaphase", "Anaphase", "Telophase"], answer: 1, reason: "Metaphase aligns chromosomes at the cell’s center." },
+                    { q: "What is the function of the endoplasmic reticulum?", options: ["Protein synthesis", "Lipid synthesis", "Both", "Energy production"], answer: 2, reason: "The ER synthesizes proteins (rough) and lipids (smooth)." },
+                    { q: "Which blood cells fight infection?", options: ["Red blood cells", "White blood cells", "Platelets", "Plasma"], answer: 1, reason: "White blood cells are part of the immune system." },
+                    { q: "What is the primary source of energy in respiration?", options: ["Glucose", "Oxygen", "Carbon dioxide", "Water"], answer: 0, reason: "Glucose is broken down to produce energy in respiration." },
+                    { q: "Which tissue transports food in plants?", options: ["Xylem", "Phloem", "Epidermis", "Collenchyma"], answer: 1, reason: "Phloem transports nutrients like sugars in plants." },
+                    { q: "What is the role of centrioles?", options: ["Protein synthesis", "Cell division", "Energy production", "Lipid storage"], answer: 1, reason: "Centrioles organize spindles during cell division." },
+                    { q: "Which organelle contains digestive enzymes?", options: ["Lysosome", "Mitochondria", "Golgi", "Ribosome"], answer: 0, reason: "Lysosomes digest waste with enzymes." },
+                    { q: "What is diffusion?", options: ["Movement of water", "Movement of particles", "Active transport", "Protein synthesis"], answer: 1, reason: "Diffusion is the passive movement of particles." },
+                    { q: "Which hormone regulates blood sugar?", options: ["Insulin", "Adrenaline", "Thyroxine", "Estrogen"], answer: 0, reason: "Insulin lowers blood glucose levels." },
+                    { q: "What is the function of chloroplasts?", options: ["Respiration", "Photosynthesis", "Protein synthesis", "Waste removal"], answer: 1, reason: "Chloroplasts perform photosynthesis in plant cells." },
+                    { q: "Which process reduces chromosome number?", options: ["Mitosis", "Meiosis", "Fission", "Budding"], answer: 1, reason: "Meiosis halves the chromosome number for gametes." },
+                    { q: "What is the main component of blood plasma?", options: ["Water", "Glucose", "Protein", "Oxygen"], answer: 0, reason: "Water makes up about 90% of blood plasma." },
+                    { q: "Which gas is essential for respiration?", options: ["Carbon dioxide", "Oxygen", "Nitrogen", "Hydrogen"], answer: 1, reason: "Oxygen is required for cellular respiration." },
+                    { q: "What is the role of the cell membrane?", options: ["Protection", "Selective permeability", "Energy production", "Genetic storage"], answer: 1, reason: "The cell membrane controls what enters and exits the cell." }
+                ],
+                4: [
+                    { q: "What is the primary function of hemoglobin?", options: ["Oxygen transport", "Nutrient transport", "Waste removal", "Immune defense"], answer: 0, reason: "Hemoglobin carries oxygen in the blood." },
+                    { q: "Which molecule is produced in glycolysis?", options: ["ATP", "DNA", "RNA", "Glucose"], answer: 0, reason: "Glycolysis produces ATP from glucose breakdown." },
+                    { q: "What is the role of guard cells in plants?", options: ["Photosynthesis", "Regulate stomata", "Transport water", "Store food"], answer: 1, reason: "Guard cells control stomatal opening for gas exchange." },
+                    { q: "Which organ filters blood in humans?", options: ["Liver", "Kidney", "Heart", "Lungs"], answer: 1, reason: "Kidneys filter waste from blood to form urine." },
+                    { q: "What is the function of the nucleolus?", options: ["Protein synthesis", "Ribosome production", "Energy production", "Cell division"], answer: 1, reason: "The nucleolus assembles ribosomes." },
+                    { q: "Which process occurs in the mitochondria?", options: ["Photosynthesis", "Respiration", "Protein synthesis", "Lipid synthesis"], answer: 1, reason: "Mitochondria perform cellular respiration." },
+                    { q: "What is the source of genetic variation in meiosis?", options: ["Crossing over", "Mutation", "Mitosis", "Diffusion"], answer: 0, reason: "Crossing over shuffles genes during meiosis." },
+                    { q: "Which tissue provides structural support in plants?", options: ["Parenchyma", "Collenchyma", "Sclerenchyma", "Xylem"], answer: 2, reason: "Sclerenchyma provides rigid support in plants." },
+                    { q: "What is the function of platelets?", options: ["Oxygen transport", "Blood clotting", "Immune defense", "Nutrient transport"], answer: 1, reason: "Platelets help in blood clotting." },
+                    { q: "Which hormone promotes growth in plants?", options: ["Auxin", "Gibberellin", "Cytokinin", "All of these"], answer: 3, reason: "Auxin, gibberellin, and cytokinin all promote plant growth." },
+                    { q: "What is the primary pigment in photosynthesis?", options: ["Chlorophyll a", "Chlorophyll b", "Carotene", "Xanthophyll"], answer: 0, reason: "Chlorophyll a is the main light-absorbing pigment." },
+                    { q: "Which structure protects bacterial cells?", options: ["Cell membrane", "Cell wall", "Capsule", "Nucleus"], answer: 2, reason: "The capsule provides extra protection in bacteria." },
+                    { q: "What is the role of the Golgi apparatus?", options: ["Protein modification", "Energy production", "DNA storage", "Cell division"], answer: 0, reason: "The Golgi modifies and packages proteins." },
+                    { q: "Which process uses oxygen to break down glucose?", options: ["Aerobic respiration", "Anaerobic respiration", "Photosynthesis", "Fermentation"], answer: 0, reason: "Aerobic respiration requires oxygen." },
+                    { q: "What is the function of the vacuole in plant cells?", options: ["Storage", "Protein synthesis", "Energy production", "Cell division"], answer: 0, reason: "Vacuoles store water, nutrients, and waste." }
+                ],
+                5: [
+                    { q: "Which organ produces bile?", options: ["Liver", "Pancreas", "Stomach", "Gallbladder"], answer: 0, reason: "The liver produces bile for fat digestion." },
+                    { q: "What is the end product of protein digestion?", options: ["Glucose", "Amino acids", "Fatty acids", "Glycerol"], answer: 1, reason: "Proteins are broken down into amino acids." },
+                    { q: "Which hormone inhibits plant growth?", options: ["Auxin", "Gibberellin", "Abscisic acid", "Cytokinin"], answer: 2, reason: "Abscisic acid inhibits growth under stress." },
+                    { q: "What is the role of the spleen?", options: ["Filters blood", "Digests food", "Produces insulin", "Transports oxygen"], answer: 0, reason: "The spleen filters blood and removes old cells." },
+                    { q: "Which process produces lactic acid in muscles?", options: ["Aerobic respiration", "Anaerobic respiration", "Photosynthesis", "Glycolysis"], answer: 1, reason: "Anaerobic respiration produces lactic acid." },
+                    { q: "What is the function of the xylem?", options: ["Food transport", "Water transport", "Gas exchange", "Support"], answer: 1, reason: "Xylem transports water and minerals." },
+                    { q: "Which organelle is absent in mature red blood cells?", options: ["Nucleus", "Mitochondria", "Ribosome", "Golgi"], answer: 0, reason: "Mature RBCs lack a nucleus to carry more oxygen." },
+                    { q: "What is the role of tRNA in protein synthesis?", options: ["Carries amino acids", "Transcribes DNA", "Stores genetic info", "Catalyzes reactions"], answer: 0, reason: "tRNA brings amino acids to ribosomes." },
+                    { q: "Which gas regulates breathing rate?", options: ["Oxygen", "Carbon dioxide", "Nitrogen", "Hydrogen"], answer: 1, reason: "CO₂ levels control breathing rate." },
+                    { q: "What is the function of the pancreas?", options: ["Produces insulin", "Filters blood", "Stores bile", "Transports oxygen"], answer: 0, reason: "The pancreas produces insulin and digestive enzymes." },
+                    { q: "Which tissue connects muscles to bones?", options: ["Ligament", "Tendon", "Cartilage", "Nerve"], answer: 1, reason: "Tendons connect muscles to bones." },
+                    { q: "What is the primary function of leaves?", options: ["Photosynthesis", "Water storage", "Support", "Reproduction"], answer: 0, reason: "Leaves are the main site of photosynthesis." },
+                    { q: "Which process forms ATP in mitochondria?", options: ["Krebs cycle", "Glycolysis", "Electron transport chain", "All of these"], answer: 2, reason: "The ETC produces most ATP in mitochondria." },
+                    { q: "What is the role of the hypothalamus?", options: ["Regulates body temperature", "Produces blood cells", "Digests food", "Transports nutrients"], answer: 0, reason: "The hypothalamus controls temperature and hormones." },
+                    { q: "Which molecule is the final electron acceptor in respiration?", options: ["Oxygen", "Carbon dioxide", "Glucose", "Water"], answer: 0, reason: "Oxygen accepts electrons in the ETC." }
+                ],
+                6: [
+                    { q: "What is the function of the large intestine?", options: ["Absorbs water", "Digests proteins", "Produces bile", "Stores fat"], answer: 0, reason: "The large intestine reabsorbs water from waste." },
+                    { q: "Which hormone triggers ovulation?", options: ["Estrogen", "Progesterone", "LH", "FSH"], answer: 2, reason: "Luteinizing hormone (LH) triggers ovulation." },
+                    { q: "What is the primary site of digestion?", options: ["Stomach", "Small intestine", "Large intestine", "Mouth"], answer: 1, reason: "The small intestine absorbs most nutrients." },
+                    { q: "Which blood vessel carries oxygenated blood?", options: ["Vein", "Artery", "Capillary", "Venule"], answer: 1, reason: "Arteries carry oxygenated blood from the heart." },
+                    { q: "What is the role of chlorophyll in photosynthesis?", options: ["Absorbs light", "Produces glucose", "Releases oxygen", "Transports water"], answer: 0, reason: "Chlorophyll absorbs sunlight for energy." },
+                    { q: "Which organ regulates blood pressure?", options: ["Heart", "Kidney", "Lungs", "Liver"], answer: 1, reason: "Kidneys regulate blood pressure via hormones." },
+                    { q: "What is the function of the phloem?", options: ["Water transport", "Food transport", "Gas exchange", "Support"], answer: 1, reason: "Phloem transports sugars in plants." },
+                    { q: "Which process repairs damaged tissues?", options: ["Mitosis", "Meiosis", "Apoptosis", "Diffusion"], answer: 0, reason: "Mitosis replaces damaged cells." },
+                    { q: "What is the role of the thyroid gland?", options: ["Regulates metabolism", "Controls blood sugar", "Produces adrenaline", "Filters blood"], answer: 0, reason: "The thyroid regulates metabolism with thyroxine." },
+                    { q: "Which molecule is broken down in the Krebs cycle?", options: ["Glucose", "Pyruvate", "Acetyl-CoA", "Lactic acid"], answer: 2, reason: "Acetyl-CoA enters the Krebs cycle." },
+                    { q: "What is the function of the alveoli?", options: ["Gas exchange", "Blood filtration", "Nutrient absorption", "Waste storage"], answer: 0, reason: "Alveoli exchange O₂ and CO₂ in the lungs." },
+                    { q: "Which hormone promotes water reabsorption?", options: ["ADH", "Insulin", "Glucagon", "Cortisol"], answer: 0, reason: "ADH increases water reabsorption in kidneys." },
+                    { q: "What is the primary function of roots?", options: ["Photosynthesis", "Absorption", "Support", "Reproduction"], answer: 1, reason: "Roots absorb water and nutrients." },
+                    { q: "Which process occurs in the cytoplasm?", options: ["Krebs cycle", "Glycolysis", "Electron transport", "Photosynthesis"], answer: 1, reason: "Glycolysis occurs in the cytoplasm." },
+                    { q: "What is the role of the cerebellum?", options: ["Memory", "Balance", "Vision", "Hearing"], answer: 1, reason: "The cerebellum coordinates balance and movement." }
+                ],
+                7: [
+                    { q: "Which organ produces insulin?", options: ["Liver", "Pancreas", "Kidney", "Stomach"], answer: 1, reason: "The pancreas produces insulin to regulate blood sugar." },
+                    { q: "What is the function of the nephron?", options: ["Filters blood", "Produces bile", "Stores glucose", "Transports oxygen"], answer: 0, reason: "Nephrons filter blood to form urine in kidneys." },
+                    { q: "Which molecule is produced in the light reaction?", options: ["Glucose", "ATP", "CO₂", "H₂O"], answer: 1, reason: "ATP is produced in the light reaction of photosynthesis." },
+                    { q: "What is the role of the spinal cord?", options: ["Reflex actions", "Digestion", "Vision", "Hearing"], answer: 0, reason: "The spinal cord mediates reflex actions." },
+                    { q: "Which process occurs in the Calvin cycle?", options: ["CO₂ fixation", "O₂ release", "Light absorption", "Water splitting"], answer: 0, reason: "The Calvin cycle fixes CO₂ into glucose." },
+                    { q: "What is the function of the adrenal gland?", options: ["Regulates metabolism", "Produces adrenaline", "Filters blood", "Controls growth"], answer: 1, reason: "The adrenal gland produces adrenaline for stress response." },
+                    { q: "Which blood cells carry oxygen?", options: ["White blood cells", "Red blood cells", "Platelets", "Plasma"], answer: 1, reason: "Red blood cells contain hemoglobin to carry oxygen." },
+                    { q: "What is the role of the xylem in transpiration?", options: ["Transports water", "Transports food", "Gas exchange", "Photosynthesis"], answer: 0, reason: "Xylem transports water during transpiration." },
+                    { q: "Which hormone regulates sleep?", options: ["Melatonin", "Insulin", "Adrenaline", "Cortisol"], answer: 0, reason: "Melatonin regulates the sleep-wake cycle." },
+                    { q: "What is the function of the small intestine?", options: ["Water absorption", "Nutrient absorption", "Bile production", "Gas exchange"], answer: 1, reason: "The small intestine absorbs nutrients from food." },
+                    { q: "Which process produces CO₂ in cells?", options: ["Photosynthesis", "Respiration", "Fermentation", "Diffusion"], answer: 1, reason: "Respiration produces CO₂ as a byproduct." },
+                    { q: "What is the role of the pituitary gland?", options: ["Master gland", "Blood filtration", "Oxygen transport", "Digestive enzyme production"], answer: 0, reason: "The pituitary gland controls other endocrine glands." },
+                    { q: "Which tissue protects plant surfaces?", options: ["Epidermis", "Parenchyma", "Xylem", "Phloem"], answer: 0, reason: "The epidermis protects plant surfaces." },
+                    { q: "What is the role of the retina?", options: ["Vision", "Hearing", "Balance", "Taste"], answer: 0, reason: "The retina detects light for vision." },
+                    { q: "Which molecule is stored in the liver?", options: ["Glycogen", "Glucose", "Fatty acids", "Amino acids"], answer: 0, reason: "The liver stores glycogen as an energy reserve." }
+                ],
+                8: [
+                    { q: "What is the primary function of the lungs?", options: ["Gas exchange", "Blood filtration", "Nutrient absorption", "Waste storage"], answer: 0, reason: "Lungs exchange O₂ and CO₂ with the blood." },
+                    { q: "Which hormone promotes fruit ripening?", options: ["Ethylene", "Auxin", "Gibberellin", "Cytokinin"], answer: 0, reason: "Ethylene triggers fruit ripening in plants." },
+                    { q: "What is the role of the esophagus?", options: ["Food transport", "Digestion", "Absorption", "Gas exchange"], answer: 0, reason: "The esophagus transports food to the stomach." },
+                    { q: "Which process occurs in the stroma of chloroplasts?", options: ["Light reaction", "Calvin cycle", "Krebs cycle", "Glycolysis"], answer: 1, reason: "The Calvin cycle occurs in the stroma." },
+                    { q: "What is the function of the urethra?", options: ["Urine excretion", "Blood filtration", "Oxygen transport", "Nutrient absorption"], answer: 0, reason: "The urethra excretes urine from the body." },
+                    { q: "Which organ produces digestive enzymes?", options: ["Pancreas", "Liver", "Kidney", "Heart"], answer: 0, reason: "The pancreas produces digestive enzymes." },
+                    { q: "What is the role of the thymus?", options: ["Immune system", "Blood production", "Digestion", "Respiration"], answer: 0, reason: "The thymus matures T-cells for immunity." },
+                    { q: "Which molecule is the end product of glycolysis?", options: ["Pyruvate", "Glucose", "ATP", "Lactic acid"], answer: 0, reason: "Glycolysis converts glucose to pyruvate." },
+                    { q: "What is the function of the ovule?", options: ["Seed development", "Pollen production", "Water transport", "Photosynthesis"], answer: 0, reason: "The ovule develops into a seed after fertilization." },
+                    { q: "Which hormone regulates calcium levels?", options: ["Parathormone", "Insulin", "Adrenaline", "Thyroxine"], answer: 0, reason: "Parathormone regulates blood calcium." },
+                    { q: "What is the primary function of the brain?", options: ["Coordination", "Digestion", "Respiration", "Circulation"], answer: 0, reason: "The brain coordinates body functions." },
+                    { q: "Which tissue provides flexibility in plants?", options: ["Collenchyma", "Sclerenchyma", "Parenchyma", "Xylem"], answer: 0, reason: "Collenchyma provides flexible support." },
+                    { q: "What is the role of the diaphragm?", options: ["Breathing", "Digestion", "Circulation", "Excretion"], answer: 0, reason: "The diaphragm aids in breathing." },
+                    { q: "Which process produces ethanol in yeast?", options: ["Aerobic respiration", "Anaerobic respiration", "Photosynthesis", "Glycolysis"], answer: 1, reason: "Anaerobic respiration in yeast produces ethanol." },
+                    { q: "What is the function of the placenta?", options: ["Nutrient exchange", "Gas exchange", "Waste removal", "All of these"], answer: 3, reason: "The placenta performs all these functions in pregnancy." }
+                ],
+                9: [
+                    { q: "What is the role of the sinoatrial node?", options: ["Pacemaker", "Blood filtration", "Oxygen transport", "Nutrient absorption"], answer: 0, reason: "The SA node initiates the heartbeat." },
+                    { q: "Which hormone closes stomata?", options: ["Abscisic acid", "Auxin", "Gibberellin", "Cytokinin"], answer: 0, reason: "Abscisic acid closes stomata during drought." },
+                    { q: "What is the primary function of the stomach?", options: ["Protein digestion", "Water absorption", "Gas exchange", "Blood filtration"], answer: 0, reason: "The stomach digests proteins with enzymes." },
+                    { q: "Which molecule is the substrate in the Krebs cycle?", options: ["Glucose", "Pyruvate", "Acetyl-CoA", "Lactic acid"], answer: 2, reason: "Acetyl-CoA is used in the Krebs cycle." },
+                    { q: "What is the function of the ureter?", options: ["Urine transport", "Blood filtration", "Oxygen transport", "Nutrient absorption"], answer: 0, reason: "The ureter transports urine to the bladder." },
+                    { q: "Which organ produces erythropoietin?", options: ["Kidney", "Liver", "Pancreas", "Heart"], answer: 0, reason: "The kidney produces erythropoietin for RBC production." },
+                    { q: "What is the role of the lymph nodes?", options: ["Immune defense", "Blood production", "Digestion", "Respiration"], answer: 0, reason: "Lymph nodes filter pathogens and activate immunity." },
+                    { q: "Which process occurs in the thylakoids?", options: ["Light reaction", "Calvin cycle", "Krebs cycle", "Glycolysis"], answer: 0, reason: "The light reaction occurs in thylakoid membranes." },
+                    { q: "What is the function of the anther?", options: ["Pollen production", "Seed development", "Water transport", "Photosynthesis"], answer: 0, reason: "The anther produces pollen grains." },
+                    { q: "Which hormone regulates metabolism?", options: ["Thyroxine", "Insulin", "Adrenaline", "Cortisol"], answer: 0, reason: "Thyroxine controls metabolic rate." },
+                    { q: "What is the primary function of the skin?", options: ["Protection", "Digestion", "Respiration", "Circulation"], answer: 0, reason: "The skin protects against pathogens and injury." },
+                    { q: "Which tissue stores fat in animals?", options: ["Adipose", "Muscle", "Nerve", "Epithelial"], answer: 0, reason: "Adipose tissue stores fat for energy." },
+                    { q: "What is the role of the trachea?", options: ["Air passage", "Food passage", "Blood filtration", "Nutrient absorption"], answer: 0, reason: "The trachea conducts air to the lungs." },
+                    { q: "Which process produces NADH in respiration?", options: ["Krebs cycle", "Glycolysis", "Electron transport", "Photosynthesis"], answer: 0, reason: "The Krebs cycle produces NADH." },
+                    { q: "What is the function of the ovary in plants?", options: ["Seed production", "Pollen production", "Water transport", "Photosynthesis"], answer: 0, reason: "The ovary develops into a fruit with seeds." }
+                ],
+                10: [
+                    { q: "What is the role of the optic nerve?", options: ["Vision", "Hearing", "Balance", "Taste"], answer: 0, reason: "The optic nerve transmits visual signals to the brain." },
+                    { q: "Which hormone promotes cell division in plants?", options: ["Cytokinin", "Auxin", "Gibberellin", "Abscisic acid"], answer: 0, reason: "Cytokinin stimulates cell division." },
+                    { q: "What is the primary function of the gallbladder?", options: ["Bile storage", "Bile production", "Blood filtration", "Nutrient absorption"], answer: 0, reason: "The gallbladder stores bile produced by the liver." },
+                    { q: "Which molecule is reduced in photosynthesis?", options: ["CO₂", "H₂O", "O₂", "Glucose"], answer: 0, reason: "CO₂ is reduced to glucose in photosynthesis." },
+                    { q: "What is the function of the urethra?", options: ["Urine excretion", "Blood filtration", "Oxygen transport", "Nutrient absorption"], answer: 0, reason: "The urethra excretes urine from the bladder." },
+                    { q: "Which organ produces glucagon?", options: ["Pancreas", "Liver", "Kidney", "Heart"], answer: 0, reason: "The pancreas produces glucagon to raise blood sugar." },
+                    { q: "What is the role of the bone marrow?", options: ["Blood cell production", "Fat storage", "Digestion", "Respiration"], answer: 0, reason: "Bone marrow produces blood cells." },
+                    { q: "Which process occurs in the mitochondrial matrix?", options: ["Krebs cycle", "Glycolysis", "Electron transport", "Light reaction"], answer: 0, reason: "The Krebs cycle occurs in the mitochondrial matrix." },
+                    { q: "What is the function of the stigma?", options: ["Pollen reception", "Seed development", "Water transport", "Photosynthesis"], answer: 0, reason: "The stigma receives pollen during pollination." },
+                    { q: "Which hormone regulates stress response?", options: ["Cortisol", "Insulin", "Adrenaline", "Thyroxine"], answer: 0, reason: "Cortisol manages chronic stress responses." },
+                    { q: "What is the primary function of the heart?", options: ["Pumping blood", "Digestion", "Respiration", "Excretion"], answer: 0, reason: "The heart pumps blood throughout the body." },
+                    { q: "Which tissue conducts nerve impulses?", options: ["Nervous", "Muscle", "Epithelial", "Connective"], answer: 0, reason: "Nervous tissue transmits nerve impulses." },
+                    { q: "What is the role of the epiglottis?", options: ["Prevents choking", "Digests food", "Filters blood", "Absorbs nutrients"], answer: 0, reason: "The epiglottis prevents food from entering the trachea." },
+                    { q: "Which process produces FADH₂?", options: ["Krebs cycle", "Glycolysis", "Electron transport", "Photosynthesis"], answer: 0, reason: "The Krebs cycle produces FADH₂." },
+                    { q: "What is the function of the style in plants?", options: ["Pollen tube path", "Seed production", "Water transport", "Photosynthesis"], answer: 0, reason: "The style guides the pollen tube to the ovary." }
+                ],
+                11: [
+                    { q: "What is the role of DNA polymerase?", options: ["DNA replication", "Protein synthesis", "RNA transcription", "Cell division"], answer: 0, reason: "DNA polymerase synthesizes new DNA strands." },
+                    { q: "Which molecule is the genetic code?", options: ["DNA", "RNA", "Protein", "Carbohydrate"], answer: 0, reason: "DNA contains the genetic instructions for life." },
+                    { q: "What is the function of the lac operon?", options: ["Gene regulation", "Protein synthesis", "DNA replication", "Cell division"], answer: 0, reason: "The lac operon regulates lactose metabolism genes." },
+                    { q: "Which process produces recombinant DNA?", options: ["PCR", "Cloning", "Gene splicing", "Transcription"], answer: 2, reason: "Gene splicing combines DNA from different sources." },
+                    { q: "What is the role of restriction enzymes?", options: ["Cut DNA", "Join DNA", "Replicate DNA", "Transcribe DNA"], answer: 0, reason: "Restriction enzymes cut DNA at specific sites." },
+                    { q: "Which molecule carries the genetic code to ribosomes?", options: ["mRNA", "tRNA", "rRNA", "DNA"], answer: 0, reason: "mRNA carries the code from DNA to ribosomes." },
+                    { q: "What is the function of ligase?", options: ["Joins DNA", "Cuts DNA", "Replicates DNA", "Translates DNA"], answer: 0, reason: "Ligase joins DNA fragments together." },
+                    { q: "Which technique amplifies DNA?", options: ["PCR", "Gel electrophoresis", "Cloning", "Sequencing"], answer: 0, reason: "PCR amplifies DNA segments." },
+                    { q: "What is the role of plasmids in biotechnology?", options: ["Vectors", "Enzymes", "Templates", "Primers"], answer: 0, reason: "Plasmids are used as vectors to carry genes." },
+                    { q: "Which process separates DNA fragments?", options: ["Gel electrophoresis", "PCR", "Cloning", "Transcription"], answer: 0, reason: "Gel electrophoresis separates DNA by size." },
+                    { q: "What is the function of Taq polymerase?", options: ["DNA replication in PCR", "Protein synthesis", "RNA transcription", "Cell division"], answer: 0, reason: "Taq polymerase is heat-stable for PCR." },
+                    { q: "Which molecule is used as a primer in PCR?", options: ["DNA", "RNA", "Protein", "Lipid"], answer: 1, reason: "RNA primers initiate DNA synthesis in PCR." },
+                    { q: "What is the role of the promoter in transcription?", options: ["Initiation site", "Termination site", "Replication site", "Translation site"], answer: 0, reason: "The promoter is where transcription begins." },
+                    { q: "Which process edits RNA?", options: ["Splicing", "Replication", "Translation", "Transcription"], answer: 0, reason: "Splicing removes introns from RNA." },
+                    { q: "What is the function of the ribosome?", options: ["Protein synthesis", "DNA replication", "RNA transcription", "Cell division"], answer: 0, reason: "Ribosomes translate mRNA into proteins." }
+                ],
+                12: [
+                    { q: "What is the law of segregation?", options: ["Alleles separate", "Traits blend", "Genes mutate", "Traits are fixed"], answer: 0, reason: "Alleles segregate during gamete formation." },
+                    { q: "Which molecule carries amino acids to ribosomes?", options: ["tRNA", "mRNA", "rRNA", "DNA"], answer: 0, reason: "tRNA transports amino acids for protein synthesis." },
+                    { q: "What is the function of the codon?", options: ["Codes for amino acids", "Replicates DNA", "Transcribes RNA", "Splices RNA"], answer: 0, reason: "Codons specify amino acids in mRNA." },
+                    { q: "Which process forms mRNA from DNA?", options: ["Transcription", "Translation", "Replication", "Splicing"], answer: 0, reason: "Transcription copies DNA to mRNA." },
+                    { q: "What is the role of the anticodon?", options: ["Pairs with codon", "Replicates DNA", "Transcribes RNA", "Splices RNA"], answer: 0, reason: "The anticodon on tRNA pairs with the mRNA codon." },
+                    { q: "Which law states traits are inherited independently?", options: ["Segregation", "Independent assortment", "Dominance", "Mutation"], answer: 1, reason: "Independent assortment applies to different genes." },
+                    { q: "What is the function of the operon?", options: ["Gene regulation", "Protein synthesis", "DNA replication", "Cell division"], answer: 0, reason: "Operons regulate gene expression." },
+                    { q: "Which molecule is mutated in sickle cell anemia?", options: ["Hemoglobin", "Insulin", "Glucose", "Collagen"], answer: 0, reason: "A mutation in hemoglobin causes sickle cell anemia." },
+                    { q: "What is the role of the telomere?", options: ["Protects chromosome ends", "Replicates DNA", "Transcribes RNA", "Splices RNA"], answer: 0, reason: "Telomeres protect chromosome ends from degradation." },
+                    { q: "Which process produces genetic variation?", options: ["Crossing over", "Mitosis", "Binary fission", "Diffusion"], answer: 0, reason: "Crossing over shuffles genes in meiosis." },
+                    { q: "What is the function of the lac repressor?", options: ["Inhibits transcription", "Promotes transcription", "Replicates DNA", "Translates RNA"], answer: 0, reason: "The lac repressor blocks lactose gene expression." },
+                    { q: "Which molecule is the template in transcription?", options: ["DNA", "RNA", "Protein", "Lipid"], answer: 0, reason: "DNA serves as the template for mRNA synthesis." },
+                    { q: "What is the role of RNA polymerase?", options: ["Transcribes RNA", "Replicates DNA", "Translates RNA", "Splices RNA"], answer: 0, reason: "RNA polymerase synthesizes RNA from DNA." },
+                    { q: "Which process forms proteins from mRNA?", options: ["Translation", "Transcription", "Replication", "Splicing"], answer: 0, reason: "Translation converts mRNA into proteins." },
+                    { q: "What is the function of the gene?", options: ["Codes for traits", "Replicates DNA", "Transcribes RNA", "Splices RNA"], answer: 0, reason: "Genes code for specific traits or proteins." }
+                ],
+                13: [
+                    { q: "What is the primary source of variation in evolution?", options: ["Mutation", "Migration", "Selection", "Drift"], answer: 0, reason: "Mutations introduce new genetic variations." },
+                    { q: "Which molecule is the carrier of heredity?", options: ["DNA", "RNA", "Protein", "Carbohydrate"], answer: 0, reason: "DNA carries genetic information across generations." },
+                    { q: "What is the function of the Hardy-Weinberg principle?", options: ["Genetic equilibrium", "Mutation rate", "Selection pressure", "Gene flow"], answer: 0, reason: "It describes a population in genetic equilibrium." },
+                    { q: "Which process drives natural selection?", options: ["Survival of fittest", "Random mating", "Genetic drift", "Gene flow"], answer: 0, reason: "Survival of the fittest drives natural selection." },
+                    { q: "What is the role of fossils in evolution?", options: ["Evidence", "Mutation", "Selection", "Drift"], answer: 0, reason: "Fossils provide evidence of past life forms." },
+                    { q: "Which molecule is altered in mutations?", options: ["DNA", "RNA", "Protein", "Carbohydrate"], answer: 0, reason: "Mutations change the DNA sequence." },
+                    { q: "What is the function of homologous structures?", options: ["Show common ancestry", "Show adaptation", "Show mutation", "Show drift"], answer: 0, reason: "Homologous structures indicate shared ancestry." },
+                    { q: "Which process causes speciation?", options: ["Isolation", "Mutation", "Selection", "Drift"], answer: 0, reason: "Isolation leads to new species formation." },
+                    { q: "What is the role of the gene pool?", options: ["All alleles in population", "Single gene", "Protein synthesis", "Cell division"], answer: 0, reason: "The gene pool includes all genetic variation." },
+                    { q: "Which molecule is sequenced to study evolution?", options: ["DNA", "RNA", "Protein", "Lipid"], answer: 0, reason: "DNA sequencing reveals evolutionary relationships." },
+                    { q: "What is the function of adaptive radiation?", options: ["Divergence of species", "Convergence", "Mutation", "Drift"], answer: 0, reason: "Adaptive radiation leads to species diversification." },
+                    { q: "Which process reduces genetic diversity?", options: ["Genetic drift", "Mutation", "Gene flow", "Selection"], answer: 0, reason: "Genetic drift reduces diversity in small populations." },
+                    { q: "What is the role of the bottleneck effect?", options: ["Reduces population size", "Increases mutation", "Promotes selection", "Enhances gene flow"], answer: 0, reason: "The bottleneck effect reduces genetic variation." },
+                    { q: "Which molecule is compared in molecular clocks?", options: ["DNA", "RNA", "Protein", "All of these"], answer: 3, reason: "DNA, RNA, and proteins can all be used in molecular clocks." },
+                    { q: "What is the function of natural selection?", options: ["Adaptation", "Mutation", "Drift", "Gene flow"], answer: 0, reason: "Natural selection leads to adaptations." }
+                ],
+                14: [
+                    { q: "What is the primary producer in an ecosystem?", options: ["Plants", "Animals", "Fungi", "Bacteria"], answer: 0, reason: "Plants produce energy through photosynthesis." },
+                    { q: "Which molecule is recycled in the carbon cycle?", options: ["CO₂", "O₂", "N₂", "H₂O"], answer: 0, reason: "CO₂ is cycled between plants and animals." },
+                    { q: "What is the function of decomposers?", options: ["Break down organic matter", "Produce food", "Consume prey", "Fix nitrogen"], answer: 0, reason: "Decomposers recycle nutrients by breaking down matter." },
+                    { q: "Which process fixes nitrogen?", options: ["Nitrogen fixation", "Denitrification", "Ammonification", "Nitrification"], answer: 0, reason: "Nitrogen fixation converts N₂ to usable forms." },
+                    { q: "What is the role of the trophic level?", options: ["Energy transfer", "Mutation", "Selection", "Drift"], answer: 0, reason: "Trophic levels show energy flow in ecosystems." },
+                    { q: "Which molecule is the energy source in ecosystems?", options: ["Glucose", "CO₂", "O₂", "H₂O"], answer: 0, reason: "Glucose is the primary energy molecule." },
+                    { q: "What is the function of the food chain?", options: ["Shows energy flow", "Shows mutation", "Shows selection", "Shows drift"], answer: 0, reason: "Food chains depict energy transfer." },
+                    { q: "Which process removes nitrogen from soil?", options: ["Denitrification", "Nitrification", "Fixation", "Assimilation"], answer: 0, reason: "Denitrification converts nitrates back to N₂." },
+                    { q: "What is the role of the biosphere?", options: ["Supports life", "Produces food", "Consumes energy", "Fixes nitrogen"], answer: 0, reason: "The biosphere encompasses all life-supporting zones." },
+                    { q: "Which molecule is stored in biomass?", options: ["Carbon", "Nitrogen", "Oxygen", "Hydrogen"], answer: 0, reason: "Carbon is the main component of biomass." },
+                    { q: "What is the function of the ecological pyramid?", options: ["Shows energy distribution", "Shows mutation", "Shows selection", "Shows drift"], answer: 0, reason: "Ecological pyramids show energy at each trophic level." },
+                    { q: "Which process increases soil fertility?", options: ["Nitrogen fixation", "Denitrification", "Leaching", "Erosion"], answer: 0, reason: "Nitrogen fixation adds nutrients to soil." },
+                    { q: "What is the role of the abiotic factors?", options: ["Non-living components", "Living components", "Energy producers", "Nutrient recyclers"], answer: 0, reason: "Abiotic factors are non-living ecosystem elements." },
+                    { q: "Which molecule is cycled in the water cycle?", options: ["H₂O", "CO₂", "O₂", "N₂"], answer: 0, reason: "Water (H₂O) is recycled in the water cycle." },
+                    { q: "What is the function of the climax community?", options: ["Stable ecosystem", "Unstable ecosystem", "Mutation hotspot", "Drift zone"], answer: 0, reason: "A climax community is a stable ecosystem state." }
+                ],
+                15: [
+                    { q: "What is the primary consumer in a food chain?", options: ["Herbivore", "Carnivore", "Omnivore", "Decomposer"], answer: 0, reason: "Herbivores consume producers as primary consumers." },
+                    { q: "Which molecule is the end product of photosynthesis?", options: ["Glucose", "O₂", "CO₂", "H₂O"], answer: 0, reason: "Glucose is the main product of photosynthesis." },
+                    { q: "What is the function of the ozone layer?", options: ["UV protection", "Oxygen production", "Carbon storage", "Nitrogen fixation"], answer: 0, reason: "The ozone layer blocks harmful UV radiation." },
+                    { q: "Which process causes eutrophication?", options: ["Nutrient runoff", "Deforestation", "Desertification", "Erosion"], answer: 0, reason: "Nutrient runoff leads to algal blooms in water." },
+                    { q: "What is the role of the keystone species?", options: ["Maintains ecosystem", "Produces food", "Consumes prey", "Fixes nitrogen"], answer: 0, reason: "Keystone species are critical to ecosystem stability." },
+                    { q: "Which molecule is depleted in ozone depletion?", options: ["O₃", "CO₂", "O₂", "N₂"], answer: 0, reason: "Ozone (O₃) is reduced by pollutants." },
+                    { q: "What is the function of the ecological niche?", options: ["Role in ecosystem", "Mutation rate", "Selection pressure", "Gene flow"], answer: 0, reason: "The niche is an organism’s role in its ecosystem." },
+                    { q: "Which process increases biodiversity?", options: ["Speciation", "Extinction", "Drift", "Pollution"], answer: 0, reason: "Speciation creates new species." },
+                    { q: "What is the role of the greenhouse effect?", options: ["Traps heat", "Cools earth", "Produces oxygen", "Fixes nitrogen"], answer: 0, reason: "The greenhouse effect traps heat in the atmosphere." },
+                    { q: "Which molecule contributes to global warming?", options: ["CO₂", "O₂", "N₂", "H₂O"], answer: 0, reason: "CO₂ is a major greenhouse gas." },
+                    { q: "What is the function of the biogeochemical cycle?", options: ["Nutrient recycling", "Energy production", "Mutation", "Drift"], answer: 0, reason: "Biogeochemical cycles recycle nutrients." },
+                    { q: "Which process reduces population size?", options: ["Predation", "Migration", "Reproduction", "Gene flow"], answer: 0, reason: "Predation decreases population numbers." },
+                    { q: "What is the role of the pioneer species?", options: ["Starts succession", "Ends succession", "Produces food", "Fixes nitrogen"], answer: 0, reason: "Pioneer species initiate ecological succession." },
+                    { q: "Which molecule is fixed by Rhizobium?", options: ["N₂", "CO₂", "O₂", "H₂O"], answer: 0, reason: "Rhizobium fixes nitrogen (N₂) in soil." },
+                    { q: "What is the function of the biodiversity hotspot?", options: ["High species diversity", "Low species diversity", "Mutation zone", "Drift area"], answer: 0, reason: "Biodiversity hotspots have high species richness." }
+                ]
+            }
+        };
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            if (selectedLevel >= 1 && selectedLevel <= 5) timeLeft = 120;
+            else if (selectedLevel >= 6 && selectedLevel <= 10) timeLeft = 90;
+            else if (selectedLevel >= 11 && selectedLevel <= 15) timeLeft = 60;
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                document.getElementById('timer').textContent = 
+                    `Time Left: ${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    showResult();
+                }
+            }, 1000);
+        }
+
+        function updateLevelButtons() {
+            const totalPoints = parseInt(localStorage.getItem(`${subject}Score`) || '0');
+            const levelButtons = document.querySelectorAll('.level-button');
+            levelButtons.forEach((button, index) => {
+                const level = index + 1;
+                if (level <= 2) return;
+                if ((level >= 3 && level <= 5 && totalPoints < 80) ||
+                    (level >= 6 && level <= 10 && totalPoints < 120) ||
+                    (level >= 11 && level <= 15 && totalPoints < 160)) {
+                    button.classList.add('locked');
+                    button.disabled = true;
+                    button.title = `Requires ${level <= 5 ? 80 : level <= 10 ? 120 : 160} points to unlock (Current: ${totalPoints})`;
+                } else {
+                    button.classList.remove('locked');
+                    button.disabled = false;
+                    button.title = '';
+                }
+            });
+        }
+
+        function shuffleQuestions() {
+            shuffledQuestions = [...(levels[subject][selectedLevel] || levels[subject][1])].sort(() => Math.random() - 0.5);
+            score = 0;
+            currentQuestionIndex = 0;
+            answers = new Array(15).fill(null);
+        }
+
+        function loadQuestion() {
+            if (currentQuestionIndex >= shuffledQuestions.length || timeLeft <= 0) {
+                showResult();
+                return;
+            }
+
+            const questionData = shuffledQuestions[currentQuestionIndex];
+            document.getElementById('question').textContent = 
+                `Level ${selectedLevel} - Question ${currentQuestionIndex + 1}/${shuffledQuestions.length}: ${questionData.q}`;
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = '';
+
+            questionData.options.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.classList.add('option');
+                optionElement.textContent = option;
+                if (answers[currentQuestionIndex] !== null) {
+                    if (index === questionData.answer) {
+                        optionElement.classList.add('correct');
+                    } else if (index === answers[currentQuestionIndex]) {
+                        optionElement.classList.add('incorrect');
+                    }
+                    optionElement.classList.add('selected');
+                } else {
+                    optionElement.onclick = () => selectAnswer(index, optionElement);
+                }
+                optionsContainer.appendChild(optionElement);
+            });
+
+            const reasonElement = document.getElementById('reason');
+            if (answers[currentQuestionIndex] !== null) {
+                reasonElement.textContent = questionData.reason;
+                reasonElement.classList.remove('correct', 'incorrect');
+                reasonElement.classList.add(answers[currentQuestionIndex] === questionData.answer ? 'correct' : 'incorrect');
+                reasonElement.style.display = 'block';
+            } else {
+                reasonElement.style.display = 'none';
+            }
+
+            document.getElementById('quiz-container').style.display = 'block';
+            document.getElementById('result-container').style.display = 'none';
+
+            document.getElementById('prev-button').disabled = currentQuestionIndex === 0;
+            document.getElementById('next-button').disabled = currentQuestionIndex === shuffledQuestions.length - 1 && answers[currentQuestionIndex] !== null;
+            if (answers[currentQuestionIndex] !== null) {
+                document.getElementById('next-button').disabled = false;
+            }
+        }
+
+        function selectAnswer(selectedIndex, selectedElement) {
+            const correctIndex = shuffledQuestions[currentQuestionIndex].answer;
+            answers[currentQuestionIndex] = selectedIndex;
+
+            document.querySelectorAll('.option').forEach(opt => opt.classList.add('selected'));
+            if (selectedIndex === correctIndex) {
+                score += 10;
+            }
+            selectedElement.classList.add(selectedIndex === correctIndex ? 'correct' : 'incorrect');
+            document.querySelectorAll('.option')[correctIndex].classList.add('correct');
+
+            const reasonElement = document.getElementById('reason');
+            reasonElement.textContent = shuffledQuestions[currentQuestionIndex].reason;
+            reasonElement.classList.remove('correct', 'incorrect');
+            reasonElement.classList.add(selectedIndex === correctIndex ? 'correct' : 'incorrect');
+            reasonElement.style.display = 'block';
+
+            document.getElementById('next-button').disabled = false;
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < shuffledQuestions.length - 1) {
+                currentQuestionIndex++;
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function prevQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                loadQuestion();
+            }
+        }
+
+        function showResult() {
+            clearInterval(timerInterval);
+            document.getElementById('quiz-container').style.display = 'none';
+            document.getElementById('result-container').style.display = 'block';
+            document.getElementById('final-score').textContent = `${score}`;
+
+            const subjectScoreKey = `${subject}Score`;
+            const currentScore = parseInt(localStorage.getItem(subjectScoreKey) || '0');
+            localStorage.setItem(subjectScoreKey, currentScore + score);
+
+            const quizResults = shuffledQuestions.map((q, i) => ({
+                question: q.q,
+                selectedAnswer: answers[i] !== null ? q.options[answers[i]] : "Not answered",
+                correctAnswer: q.options[q.answer],
+                timestamp: Date.now()
+            }));
+            localStorage.setItem(`${subject}Results`, JSON.stringify(quizResults));
+
+            if (score === shuffledQuestions.length * 10) {
+                localStorage.setItem(`${subject}Completed`, 'true');
+            }
+
+            updateLevelButtons();
+        }
+
+        function startQuiz(level) {
+            const totalPoints = parseInt(localStorage.getItem(`${subject}Score`) || '0');
+            if ((level >= 3 && level <= 5 && totalPoints < 80) ||
+                (level >= 6 && level <= 10 && totalPoints < 120) ||
+                (level >= 11 && level <= 15 && totalPoints < 160)) {
+                alert(`You need ${level <= 5 ? 80 : level <= 10 ? 120 : 160} points to unlock Level ${level}. Current points: ${totalPoints}`);
+                return;
+            }
+            selectedLevel = level;
+            document.getElementById('level-selector').style.display = 'none';
+            shuffleQuestions();
+            startTimer();
+            loadQuestion();
+        }
+
+        function restartQuiz() {
+            document.getElementById('result-container').style.display = 'none';
+            document.getElementById('level-selector').style.display = 'block';
+            updateLevelButtons();
+        }
+
+        function goBack() {
+            clearInterval(timerInterval);
+            window.location.href = 'index.html';
+        }
+
+        // Initialize level buttons on page load
+        updateLevelButtons();
+    </script>
+</body>
+</html>

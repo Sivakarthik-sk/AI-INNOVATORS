@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Box Maze - Crossword Puzzle</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background: #f4f4f4;
+            color: #333;
+        }
+
+        .header {
+            background: #004080;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .main-content {
+            display: flex;
+            min-height: calc(100vh - 60px);
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #e0e0e0;
+            padding: 1rem;
+            border-right: 1px solid #ccc;
+        }
+
+        .sidebar h2 {
+            color: #004080;
+            margin-top: 0;
+        }
+
+        .level-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .level-item {
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .level-item.unlocked { background: #ffffff; color: #333; }
+        .level-item.locked { background: #ffcccc; color: #666; cursor: not-allowed; }
+        .level-item.completed { background: #d4edda; color: #155724; }
+        .level-item:hover:not(.locked) { background: #f0f0f0; }
+
+        .unlock-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 0.3rem 0.6rem;
+            margin-left: 0.5rem;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .unlock-button:hover { background: #218838; }
+
+        .content {
+            flex: 1;
+            padding: 2rem;
+        }
+
+        .maze-container {
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 2rem;
+            border-radius: 5px;
+            text-align: center;
+            display: none;
+        }
+
+        .maze-grid {
+            display: grid;
+            gap: 1px;
+            max-width: 400px;
+            margin: 2rem auto;
+            background: #000;
+            padding: 1px;
+            border-radius: 5px;
+        }
+
+        .maze-grid.error { border: 2px solid red; }
+
+        .maze-cell {
+            background: #fff;
+            aspect-ratio: 1;
+            border: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .maze-cell:hover { background: #f0f0f0; }
+        .maze-cell.black { background: #000; cursor: default; }
+        .maze-cell input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            text-align: center;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+        }
+        .maze-cell input:focus { outline: none; background: #e0e0e0; }
+        .maze-cell.correct { background: #d4edda; }
+        .maze-cell .number {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            font-size: 0.7rem;
+            color: #555;
+        }
+
+        .clues {
+            margin-top: 2rem;
+            text-align: left;
+        }
+
+        .clues h3 { margin: 0.5rem 0; }
+        .clues ul { list-style: none; padding: 0; }
+        .clues li { margin: 0.3rem 0; }
+
+        .back-button {
+            background: #004080;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0.5rem;
+        }
+
+        .back-button:hover { background: #0056b3; }
+
+        .instructions {
+            font-size: 0.9rem;
+            color: #555;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 768px) {
+            .main-content { flex-direction: column; }
+            .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #ccc; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Box Maze - Crossword Puzzle</h1>
+    </div>
+    <div class="main-content">
+        <div class="sidebar">
+            <h2>Levels</h2>
+            <p>Points: <span id="pointsDisplay">0</span></p>
+            <ul class="level-list" id="levelList"></ul>
+        </div>
+        <div class="content">
+            <button class="back-button" onclick="goBack()">Back to Home</button>
+            <div class="maze-container" id="mazeContainer">
+                <h2>Level <span id="levelDisplay">1</span>: <span id="puzzleTitle"></span></h2>
+                <p>Points: <span id="gamePointsDisplay">0</span></p>
+                <p class="instructions" id="instructions">Fill in the crossword using the clues below. Each letter must match the correct answer.</p>
+                <div class="maze-grid" id="mazeGrid"></div>
+                <div class="clues" id="clues">
+                    <h3>Across</h3>
+                    <ul id="acrossClues"></ul>
+                    <h3>Down</h3>
+                    <ul id="downClues"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const levels = [
+            { size: 4, words: 2, points: 20, unlock: 0, desc: 'Class 9 Lab Basics' },
+            { size: 4, words: 3, points: 25, unlock: 20, desc: 'Class 9 Chemistry' },
+            { size: 4, words: 4, points: 30, unlock: 45, desc: 'Class 9 Physics' },
+            { size: 5, words: 4, points: 35, unlock: 75, desc: 'Class 10 Biology' },
+            { size: 5, words: 5, points: 40, unlock: 110, desc: 'Class 10 Chemistry' },
+            { size: 5, words: 6, points: 45, unlock: 150, desc: 'Class 10 Physics' },
+            { size: 6, words: 6, points: 50, unlock: 195, desc: 'Class 11 Chemistry' },
+            { size: 6, words: 7, points: 55, unlock: 245, desc: 'Class 11 Physics' },
+            { size: 6, words: 8, points: 60, unlock: 300, desc: 'Class 12 Biology' },
+            { size: 6, words: 9, points: 65, unlock: 360, desc: 'Class 12 Advanced Labs' }
+        ];
+
+        const questionBank = [
+            { answer: "hydrogen", clue: "Gas evolved when zinc reacts with dilute H₂SO₄?", class: 9 },
+            { answer: "barometer", clue: "Instrument to measure atmospheric pressure?", class: 9 },
+            { answer: "acid", clue: "Solution turning blue litmus red?", class: 9 },
+            { answer: "ampere", clue: "Unit of electric current?", class: 9 },
+            { answer: "evaporation", clue: "Process of separating salt from water?", class: 10 },
+            { answer: "co2", clue: "Gas used in photosynthesis (abbr.)?", class: 10 },
+            { answer: "concave", clue: "Lens used to correct myopia?", class: 10 },
+            { answer: "ohmmeter", clue: "Instrument to measure resistance?", class: 10 },
+            { answer: "phenol", clue: "Indicator used in titration (abbr.)?", class: 11 },
+            { answer: "mass", clue: "Law of conservation applies to?", class: 11 },
+            { answer: "tesla", clue: "Unit of magnetic field strength?", class: 11 },
+            { answer: "oxygen", clue: "Gas produced in electrolysis of water?", class: 11 },
+            { answer: "translation", clue: "Process of protein synthesis?", class: 12 },
+            { answer: "iodine", clue: "Reagent to test starch?", class: 12 },
+            { answer: "becquerel", clue: "Unit of radioactivity?", class: 12 },
+            { answer: "iron", clue: "Catalyst in Haber process?", class: 12 },
+            { answer: "voltmeter", clue: "Device to measure potential difference?", class: 12 }
+        ];
+
+        let totalPoints = parseInt(localStorage.getItem('quizPoints') || '0');
+        let completedLevels = JSON.parse(localStorage.getItem('mazeCompletedLevels') || '[]');
+        let unlockedLevels = JSON.parse(localStorage.getItem('mazeUnlockedLevels') || '[0]');
+        let selectedLevel = null;
+        let gameState = []; // { answer, direction, startX, startY, number }
+        let gridState = []; // 2D grid with letters or null (black cells)
+        let userInput = []; // 2D grid with user input
+
+        const levelList = document.getElementById('levelList');
+        const mazeContainer = document.getElementById('mazeContainer');
+        const mazeGrid = document.getElementById('mazeGrid');
+        const pointsDisplay = document.getElementById('pointsDisplay');
+        const gamePointsDisplay = document.getElementById('gamePointsDisplay');
+        const levelDisplay = document.getElementById('levelDisplay');
+        const puzzleTitle = document.getElementById('puzzleTitle');
+        const acrossClues = document.getElementById('acrossClues');
+        const downClues = document.getElementById('downClues');
+
+        function initializeLevelSelection() {
+            console.log('Initializing level selection...');
+            pointsDisplay.textContent = totalPoints;
+            levelList.innerHTML = '';
+            levels.forEach((level, index) => {
+                const li = document.createElement('li');
+                li.className = 'level-item';
+                li.innerHTML = `Level ${index + 1}: ${level.desc} (${level.points} pts)`;
+                if (completedLevels.includes(index)) {
+                    li.classList.add('completed');
+                    li.title = 'Completed';
+                    li.addEventListener('click', () => selectLevel(index));
+                } else if (unlockedLevels.includes(index)) {
+                    li.classList.add('unlocked');
+                    li.addEventListener('click', () => selectLevel(index));
+                } else {
+                    li.classList.add('locked');
+                    li.title = `Earn ${level.unlock} points to unlock`;
+                    if (totalPoints >= level.unlock) {
+                        const unlockButton = document.createElement('button');
+                        unlockButton.className = 'unlock-button';
+                        unlockButton.textContent = `Unlock (${level.unlock} pts)`;
+                        unlockButton.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            unlockLevel(index);
+                        });
+                        li.appendChild(unlockButton);
+                    }
+                }
+                levelList.appendChild(li);
+            });
+            console.log('Levels rendered:', levels.length);
+        }
+
+        function unlockLevel(index) {
+            console.log(`Attempting to unlock Level ${index + 1}`);
+            if (totalPoints >= levels[index].unlock) {
+                totalPoints -= levels[index].unlock;
+                if (!unlockedLevels.includes(index)) {
+                    unlockedLevels.push(index);
+                }
+                localStorage.setItem('quizPoints', totalPoints);
+                localStorage.setItem('mazeUnlockedLevels', JSON.stringify(unlockedLevels));
+                alert(`Level ${index + 1} unlocked! ${levels[index].unlock} points redeemed.`);
+                initializeLevelSelection();
+            } else {
+                alert(`Not enough points! You need ${levels[index].unlock} points to unlock Level ${index + 1}.`);
+            }
+        }
+
+        function selectLevel(index) {
+            console.log(`Selected Level ${index + 1}, Unlocked: ${unlockedLevels.includes(index)}, Completed: ${completedLevels.includes(index)}`);
+            selectedLevel = index;
+            if (!unlockedLevels.includes(index) && !completedLevels.includes(index)) {
+                alert(`Level ${selectedLevel + 1} is locked! Redeem it with points or complete previous levels.`);
+                return;
+            }
+            mazeContainer.style.display = 'block';
+            initializeGame();
+        }
+
+        function initializeGame() {
+            const size = levels[selectedLevel].size;
+            mazeGrid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            gameState = generateGame(levels[selectedLevel], selectedLevel);
+            gridState = Array(size).fill().map(() => Array(size).fill(null));
+            userInput = Array(size).fill().map(() => Array(size).fill(''));
+            gameState.forEach(word => {
+                const { answer, direction, startX, startY } = word;
+                for (let i = 0; i < answer.length; i++) {
+                    if (direction === 'across') {
+                        gridState[startY][startX + i] = answer[i];
+                    } else {
+                        gridState[startY + i][startX] = answer[i];
+                    }
+                }
+            });
+            levelDisplay.textContent = selectedLevel + 1;
+            puzzleTitle.textContent = levels[selectedLevel].desc;
+            gamePointsDisplay.textContent = totalPoints;
+            createMazeUI();
+            displayClues();
+            console.log(`Initialized Level ${selectedLevel + 1}, Game State:`, gameState);
+        }
+
+        function generateGame(level, levelIndex) {
+            const size = level.size;
+            const numWords = level.words;
+            const classLevel = Math.floor(levelIndex / 3) + 9;
+            const availableQuestions = questionBank.filter(q => q.class <= classLevel && q.answer.length <= size);
+            const selectedWords = [];
+            const gameState = [];
+
+            // Select words up to numWords
+            while (selectedWords.length < numWords && selectedWords.length < availableQuestions.length) {
+                const q = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
+                if (!selectedWords.includes(q.answer)) selectedWords.push(q);
+            }
+
+            // Place words in the grid
+            let wordNumber = 1;
+            selectedWords.forEach((wordData, idx) => {
+                const direction = idx % 2 === 0 ? 'across' : 'down';
+                let placed = false;
+                let attempts = 0;
+                while (!placed && attempts < 50) {
+                    let startX, startY;
+                    if (direction === 'across') {
+                        startX = Math.floor(Math.random() * (size - wordData.answer.length));
+                        startY = Math.floor(Math.random() * size);
+                    } else {
+                        startX = Math.floor(Math.random() * size);
+                        startY = Math.floor(Math.random() * (size - wordData.answer.length));
+                    }
+
+                    let canPlace = true;
+                    for (let i = 0; i < wordData.answer.length; i++) {
+                        const x = direction === 'across' ? startX + i : startX;
+                        const y = direction === 'across' ? startY : startY + i;
+                        if (gameState.some(w => {
+                            const wx = w.direction === 'across' ? w.startX : w.startX + i;
+                            const wy = w.direction === 'across' ? w.startY + i : w.startY;
+                            return wx === x && wy === y && w.answer[i] !== wordData.answer[i];
+                        })) {
+                            canPlace = false;
+                            break;
+                        }
+                    }
+
+                    if (canPlace) {
+                        gameState.push({
+                            answer: wordData.answer,
+                            clue: wordData.clue,
+                            direction: direction,
+                            startX: startX,
+                            startY: startY,
+                            number: wordNumber
+                        });
+                        wordNumber++;
+                        placed = true;
+                    }
+                    attempts++;
+                }
+            });
+
+            return gameState;
+        }
+
+        function createMazeUI() {
+            mazeGrid.innerHTML = '';
+            const size = levels[selectedLevel].size;
+            const numberMarkers = {};
+            gameState.forEach(word => {
+                numberMarkers[`${word.startY}-${word.startX}`] = word.number;
+            });
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'maze-cell';
+                    if (!gridState[y][x]) {
+                        cell.classList.add('black');
+                    } else {
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.maxLength = 1;
+                        input.value = userInput[y][x];
+                        input.addEventListener('input', (e) => {
+                            userInput[y][x] = e.target.value.toLowerCase();
+                            checkWin();
+                        });
+                        cell.appendChild(input);
+                        if (numberMarkers[`${y}-${x}`]) {
+                            const numberSpan = document.createElement('span');
+                            numberSpan.className = 'number';
+                            numberSpan.textContent = numberMarkers[`${y}-${x}`];
+                            cell.appendChild(numberSpan);
+                        }
+                    }
+                    mazeGrid.appendChild(cell);
+                }
+            }
+        }
+
+        function displayClues() {
+            acrossClues.innerHTML = '';
+            downClues.innerHTML = '';
+            gameState.forEach(word => {
+                const li = document.createElement('li');
+                li.textContent = `${word.number}. ${word.clue} (${word.answer.length} letters)`;
+                if (word.direction === 'across') {
+                    acrossClues.appendChild(li);
+                } else {
+                    downClues.appendChild(li);
+                }
+            });
+        }
+
+        function checkWin() {
+            let isCorrect = true;
+            const size = levels[selectedLevel].size;
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    if (gridState[y][x] && userInput[y][x] !== gridState[y][x]) {
+                        isCorrect = false;
+                    }
+                }
+            }
+
+            console.log('Checking win:', { gridState, userInput, isCorrect });
+            if (isCorrect) {
+                completeLevel();
+            } else if (userInput.every(row => row.every(cell => cell !== ''))) {
+                mazeGrid.classList.add('error');
+                setTimeout(() => {
+                    mazeGrid.classList.remove('error');
+                    alert('Incorrect! Try again.');
+                    initializeGame();
+                }, 500);
+            }
+        }
+
+        function completeLevel() {
+            totalPoints += levels[selectedLevel].points;
+            if (!completedLevels.includes(selectedLevel)) {
+                completedLevels.push(selectedLevel);
+            }
+            localStorage.setItem('quizPoints', totalPoints);
+            localStorage.setItem('mazeCompletedLevels', JSON.stringify(completedLevels));
+            alert(`Congratulations! Level ${selectedLevel + 1} completed! +${levels[selectedLevel].points} points`);
+            mazeContainer.style.display = 'none';
+            initializeLevelSelection();
+        }
+
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM fully loaded');
+            initializeLevelSelection();
+        });
+    </script>
+</body>
+</html>
